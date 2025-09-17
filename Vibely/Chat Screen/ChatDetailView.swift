@@ -53,18 +53,24 @@ struct ChatDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                ChatToolbarView(
+            ToolbarItem(placement: .topBarLeading) { // Changed from .navigation to .principal
+                ChatToolbarContent(
                     chatName: viewModel.chatName,
                     chatInitial: viewModel.chatInitial,
                     isOnline: true
-                ) {
-                    dismiss()
-                }
-//                .frame(maxWidth: .infinity, alignment: .leading)
+                )
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom) // Keeps input above keyboard
+        .gesture(
+            // Add drag gesture to handle swipe back manually
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        dismiss()
+                    }
+                }
+        )
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
@@ -104,19 +110,14 @@ struct MessageBubble: View {
 }
 
 
-struct ChatToolbarView: View {
+struct ChatToolbarContent: View {
     let chatName: String
     let chatInitial: String
     let isOnline: Bool
-    let onBack: () -> Void
     
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .foregroundColor(.blue)
-            }
-            
+            Image(systemName: "chevron.left")
             Circle()
                 .fill(Color.blue)
                 .frame(width: 40, height: 40)
@@ -131,8 +132,6 @@ struct ChatToolbarView: View {
                     .font(.subheadline)
                     .foregroundColor(isOnline ? .green : .gray)
             }
-            
-            Spacer()
         }
     }
 }
