@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @State private var path: [Chat] = []  // navigation path
+    @State private var path: [Route] = []  // navigation path
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -41,6 +41,7 @@ struct HomeView: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(action: {
+                            path.append(.profile)
                             // Open Settings/Profile screen
                         }) {
                             Image(systemName: "gearshape")
@@ -48,7 +49,7 @@ struct HomeView: View {
                     }
                 }
                 // Floating Action Button
-                .overlay(
+                .overlay(alignment: .bottomTrailing) {
                     Button(action: {
                         // Start new chat
                     }) {
@@ -56,17 +57,22 @@ struct HomeView: View {
                             .font(.system(size: 24))
                             .padding()
                             .background(Color.blue)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .clipShape(Circle())
                             .shadow(radius: 4)
                     }
-                        .padding(),
-                    alignment: .bottomTrailing
-                )
+                    .padding()
+                }
             }
             // Define destination for Chat
-            .navigationDestination(for: Chat.self) { chat in
-                ChatDetailView(chat: chat)
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .chat(let chat):
+                    ChatDetailView(chat: chat)
+                case .profile:
+                    ProfileView()
+                }
+                
             }
         }
     }
@@ -82,7 +88,10 @@ struct ChatRow: View {
             Circle()
                 .fill(Color.blue)
                 .frame(width: 40, height: 40)
-                .overlay(Text(chat.name.prefix(1)).foregroundColor(.white))
+                .overlay(alignment: .center) {
+                    Text(chat.name.prefix(1))
+                        .foregroundColor(.white)
+                }
             
             VStack(alignment: .leading) {
                 Text(chat.name).font(.headline)
@@ -102,11 +111,11 @@ struct ChatRow: View {
 struct ChatList: View {
     let chats: [Chat]
     let formatDate: (Date) -> String
-    @Binding var path: [Chat]
+    @Binding var path: [Route]
     
     var body: some View {
         List(chats) { chat in
-            NavigationLink(value: chat) {
+            NavigationLink(value: Route.chat(chat)) {
                 ChatRow(chat: chat, formattedDate: formatDate(chat.timestamp))
             }
         }
