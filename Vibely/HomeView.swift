@@ -9,29 +9,33 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    @State private var path: [Chat] = []  // navigation path
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(stops: [
-                        .init(color: .white, location: 0.0),   // Start: white
-                        .init(color: .white, location: 0.8),   // Still white until 80%
-                        .init(color: Color.blue.opacity(0.4),  location: 1.0)    // Smoothly fades to blue at bottom
+                        .init(color: .white, location: 0.0),
+                        .init(color: .white, location: 0.8),
+                        .init(color: Color.blue.opacity(0.4), location: 1.0)
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .ignoresSafeArea()
+                
                 VStack {
                     // Search Bar
                     TextField("Search users...", text: $viewModel.searchText)
-                        .padding(10)
+                        .padding(8)
                         .background(Color(.systemGray6))
                         .clipShape(Capsule())
                         .padding(.horizontal)
                     
-                    ChatList(chats: viewModel.filteredChats, formatDate: viewModel.formatDate)
+                    ChatList(chats: viewModel.filteredChats,
+                             formatDate: viewModel.formatDate,
+                             path: $path)
                 }
                 .navigationTitle("Chats")
                 .toolbar {
@@ -60,9 +64,14 @@ struct HomeView: View {
                     alignment: .bottomTrailing
                 )
             }
+            // Define destination for Chat
+            .navigationDestination(for: Chat.self) { chat in
+                ChatDetailView(chat: chat)
+            }
         }
     }
 }
+
 
 struct ChatRow: View {
     let chat: Chat
@@ -93,10 +102,11 @@ struct ChatRow: View {
 struct ChatList: View {
     let chats: [Chat]
     let formatDate: (Date) -> String
+    @Binding var path: [Chat]
     
     var body: some View {
         List(chats) { chat in
-            NavigationLink(destination: ChatDetailView(chat: chat)) {
+            NavigationLink(value: chat) {
                 ChatRow(chat: chat, formattedDate: formatDate(chat.timestamp))
             }
         }

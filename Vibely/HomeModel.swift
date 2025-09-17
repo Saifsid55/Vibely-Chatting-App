@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Chat: Identifiable {
+struct Chat: Identifiable, Hashable {
     let id: UUID
     let name: String
     let lastMessage: String
