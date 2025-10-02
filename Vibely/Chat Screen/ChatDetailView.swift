@@ -57,6 +57,7 @@ struct ChatDetailView: View {
                 ChatToolbarContent(
                     chatName: viewModel.chatName,
                     chatInitial: viewModel.chatInitial,
+                    avatarURL: viewModel.chat.avatarURL,   // ✅ pass avatar
                     isOnline: true
                 )
             }
@@ -80,58 +81,79 @@ struct MessageBubble: View {
     
     var body: some View {
         HStack {
-            if message.sender == .me { Spacer() }
+            if message.isMe { Spacer() }
             
             Group {
-                switch message.type {
+                switch message.messageType {
                 case .text:
                     Text(message.text ?? "")
                         .padding(8)
                 case .image:
-                    Image(systemName: "photo") // Placeholder
+                    Image(systemName: "photo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 150, height: 150)
                 case .audio:
-                    Image(systemName: "waveform") // Placeholder
+                    Image(systemName: "waveform")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 150, height: 50)
                 }
             }
-            .background(message.sender == .me ? Color.blue : Color.gray.opacity(0.3))
-            .foregroundColor(message.sender == .me ? .white : .black)
+            .background(message.isMe ? Color.blue : Color.gray.opacity(0.3))
+            .foregroundColor(message.isMe ? .white : .black)
             .cornerRadius(16)
-            .frame(maxWidth: 250, alignment: message.sender == .me ? .trailing : .leading)
+            .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
             
-            if message.sender == .other { Spacer() }
+            if !message.isMe { Spacer() }
         }
     }
 }
+
 
 
 struct ChatToolbarContent: View {
     let chatName: String
     let chatInitial: String
+    let avatarURL: String?     // ✅ Add avatar URL
     let isOnline: Bool
     
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "chevron.left")
-            Circle()
-                .fill(Color.blue)
+                .foregroundColor(.blue)
+            
+            if let url = avatarURL, !url.isEmpty {
+                AsyncImage(url: URL(string: url)) { image in
+                    image.resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(Color.blue)
+                        .overlay(Text(chatInitial).foregroundColor(.white))
+                }
                 .frame(width: 40, height: 40)
-                .overlay(
-                    Text(chatInitial)
-                        .foregroundStyle(.white)
-                )
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 40, height: 40)
+                    .overlay(Text(chatInitial).foregroundColor(.white))
+            }
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(chatName).font(.headline)
+                Text(chatName)
+                    .font(.headline)
+                    .lineLimit(1)
+                
                 Text(isOnline ? "Online" : "Offline")
                     .font(.subheadline)
                     .foregroundColor(isOnline ? .green : .gray)
             }
+            
+            Spacer()
         }
+        .padding(.horizontal)
     }
 }
+

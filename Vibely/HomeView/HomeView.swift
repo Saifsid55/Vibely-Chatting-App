@@ -40,10 +40,9 @@ struct HomeView: View {
                 .navigationTitle("Chats")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: {
+                        Button {
                             path.append(.profile)
-                            // Open Settings/Profile screen
-                        }) {
+                        } label: {
                             Image(systemName: "gearshape")
                         }
                     }
@@ -51,7 +50,7 @@ struct HomeView: View {
                 // Floating Action Button
                 .overlay(alignment: .bottomTrailing) {
                     Button(action: {
-                        // Start new chat
+                        // TODO: Open "new chat" flow
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 24))
@@ -64,7 +63,7 @@ struct HomeView: View {
                     .padding()
                 }
             }
-            // Define destination for Chat
+            // Navigation destinations
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .chat(let chat):
@@ -72,12 +71,10 @@ struct HomeView: View {
                 case .profile:
                     ProfileView()
                 }
-                
             }
         }
     }
 }
-
 
 struct ChatRow: View {
     let chat: Chat
@@ -85,25 +82,43 @@ struct ChatRow: View {
     
     var body: some View {
         HStack {
-            Circle()
-                .fill(Color.blue)
-                .frame(width: 40, height: 40)
-                .overlay(alignment: .center) {
-                    Text(chat.name.prefix(1))
-                        .foregroundColor(.white)
+            // Avatar
+            if let avatar = chat.avatarURL, !avatar.isEmpty {
+                AsyncImage(url: URL(string: avatar)) { image in
+                    image.resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Circle().fill(Color.gray.opacity(0.3))
                 }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 40, height: 40)
+                    .overlay {
+                        Text(chat.name.prefix(1))
+                            .foregroundColor(.white)
+                    }
+            }
             
-            VStack(alignment: .leading) {
+            // Chat info
+            VStack(alignment: .leading, spacing: 2) {
                 Text(chat.name).font(.headline)
-                Text(chat.lastMessage)
+                Text(chat.lastMessage?.text ?? "")
                     .font(.subheadline)
                     .foregroundColor(.gray)
+                    .lineLimit(1)
             }
             
             Spacer()
-            Text(formattedDate)
-                .font(.caption)
-                .foregroundColor(.gray)
+            
+            // Last message time
+            if let timestamp = chat.lastMessage?.timestamp {
+                Text(formattedDate)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
         }
     }
 }
@@ -116,7 +131,8 @@ struct ChatList: View {
     var body: some View {
         List(chats) { chat in
             NavigationLink(value: Route.chat(chat)) {
-                ChatRow(chat: chat, formattedDate: formatDate(chat.timestamp))
+                ChatRow(chat: chat,
+                        formattedDate: chat.lastMessage.map { formatDate($0.timestamp) } ?? "")
             }
         }
         .listStyle(.plain)
