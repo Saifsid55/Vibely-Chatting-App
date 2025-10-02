@@ -21,16 +21,14 @@ final class HomeViewModel: ObservableObject {
         listenToChats()
     }
     
-    /// Start listening to chats in Firestore
+    /// Listen for all chats where current user is a participant
     private func listenToChats() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        
-        // Stop old listener (to prevent duplicates)
         listener?.remove()
         
         listener = db.collection("chats")
-            .whereField("participants", arrayContains: uid)   // only chats I belong to
-            .order(by: "lastMessage.timestamp", descending: true) // newest chats first
+            .whereField("participants", arrayContains: uid)
+            .order(by: "lastMessage.timestamp", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
@@ -40,15 +38,28 @@ final class HomeViewModel: ObservableObject {
                 }
                 
                 self.chats = snapshot?.documents.compactMap { doc in
-                    try? doc.data(as: Chat.self)   // ✅ Direct Codable decoding
+                    // Decode with LastMessage manually
+                    let data = doc.data()
+                    let id = doc.documentID
+                    let name = data["name"] as? String ?? "Unknown"
+                    let avatarURL = data["avatarURL"] as? String
+                    let participants = data["participants"] as? [String] ?? []
+                    
+                    var lastMsg: LastMessage? = nil
+                    if let lm = data["lastMessage"] as? [String: Any],
+                       let text = lm["text"] as? String,
+                       let senderId = lm["senderId"] as? String,
+                       let timestamp = lm["timestamp"] as? Timestamp {
+                        lastMsg = LastMessage(text: text, senderId: senderId, timestamp: timestamp.dateValue())
+                    }
+                    
+                    return Chat(id: id, name: name, participants: participants, avatarURL: avatarURL, lastMessage: lastMsg)
                 } ?? []
             }
     }
     
     var filteredChats: [Chat] {
-        if searchText.isEmpty {
-            return chats
-        }
+        if searchText.isEmpty { return chats }
         return chats.filter { $0.name.lowercased().contains(searchText.lowercased()) }
     }
     
@@ -59,6 +70,6 @@ final class HomeViewModel: ObservableObject {
     }
     
     deinit {
-        listener?.remove() // stop listening when viewModel deallocates
+        listener?.remove()
     }
 }

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @State private var path: [Route] = []  // navigation path
+    @State private var path: [Route] = []
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -47,11 +47,10 @@ struct HomeView: View {
                         }
                     }
                 }
-                // Floating Action Button
                 .overlay(alignment: .bottomTrailing) {
-                    Button(action: {
-                        // TODO: Open "new chat" flow
-                    }) {
+                    Button {
+                        // TODO: new chat flow
+                    } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 24))
                             .padding()
@@ -63,61 +62,13 @@ struct HomeView: View {
                     .padding()
                 }
             }
-            // Navigation destinations
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .chat(let chat):
                     ChatDetailView(chat: chat)
                 case .profile:
-                    ProfileView()
+                    LoginView()
                 }
-            }
-        }
-    }
-}
-
-struct ChatRow: View {
-    let chat: Chat
-    let formattedDate: String
-    
-    var body: some View {
-        HStack {
-            // Avatar
-            if let avatar = chat.avatarURL, !avatar.isEmpty {
-                AsyncImage(url: URL(string: avatar)) { image in
-                    image.resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Circle().fill(Color.gray.opacity(0.3))
-                }
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Text(chat.name.prefix(1))
-                            .foregroundColor(.white)
-                    }
-            }
-            
-            // Chat info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(chat.name).font(.headline)
-                Text(chat.lastMessage?.text ?? "")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            // Last message time
-            if let timestamp = chat.lastMessage?.timestamp {
-                Text(formattedDate)
-                    .font(.caption)
-                    .foregroundColor(.gray)
             }
         }
     }
@@ -136,6 +87,43 @@ struct ChatList: View {
             }
         }
         .listStyle(.plain)
+    }
+}
+
+struct ChatRow: View {
+    let chat: Chat
+    let formattedDate: String
+    
+    var body: some View {
+        HStack {
+            if let avatar = chat.avatarURL, let url = URL(string: avatar) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Circle().fill(Color.gray.opacity(0.3))
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 40, height: 40)
+                    .overlay(Text(chat.name.prefix(1)).foregroundColor(.white))
+            }
+            
+            VStack(alignment: .leading) {
+                Text(chat.name).font(.headline)
+                Text(chat.lastMessage?.text ?? "")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            Text(formattedDate)
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
     }
 }
 

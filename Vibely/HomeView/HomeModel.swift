@@ -11,9 +11,9 @@ import FirebaseFirestore
 struct Chat: Identifiable, Codable, Hashable {
     @DocumentID var id: String?
     var name: String
-    var participants: [String]           // Match Firestore key
+    var participants: [String]
     var avatarURL: String?
-    var lastMessage: LastMessage?        // Nested struct
+    var lastMessage: LastMessage?
 }
 
 struct LastMessage: Codable, Hashable {

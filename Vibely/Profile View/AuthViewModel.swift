@@ -1,0 +1,132 @@
+//
+//  UserProfileViewModel.swift
+//  Vibely
+//
+//  Created by Mohd Saif on 02/10/25.
+//
+
+import Foundation
+import FirebaseAuth
+import FirebaseFirestore
+
+@MainActor
+class AuthViewModel: ObservableObject {
+    @Published var email = ""
+    @Published var password = ""
+    @Published var phoneNumber = ""
+    @Published var otpCode = ""
+    @Published var username = ""
+    
+    @Published var currentUser: AppUserModel?
+    @Published var isAuthenticated = false
+    @Published var showUsernameScreen = false
+    @Published var errorMessage: String?
+    
+    private var verificationID: String?
+    private let db = Firestore.firestore()
+    
+    
+    init() {
+         checkCurrentUser()
+     }
+     
+     func checkCurrentUser() {
+         if let user = Auth.auth().currentUser {
+             // Load Firestore user
+             Task {
+                try await loadUser(uid: user.uid)
+             }
+         }
+     }
+    
+    
+    // MARK: - Email Auth
+    func signupWithEmail() async {
+        do {
+            let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            self.checkUserExistsOrNavigate(uid: result.user.uid, email: email, phone: nil)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    func loginWithEmail() async {
+        do {
+            let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            try await loadUser(uid: result.user.uid)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    // MARK: - Phone Auth
+    func sendOTP() {
+        PhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, uiDelegate: nil) { verificationID, error in
+            if let error = error {
+                self.errorMessage = error.localizedDescription
+                return
+            }
+            self.verificationID = verificationID
+        }
+    }
+    
+    func verifyOTP() async {
+        guard let verificationID = verificationID else { return }
+        let credential = PhoneAuthProvider.provider().credential(
+            withVerificationID: verificationID,
+            verificationCode: otpCode
+        )
+        do {
+            let result = try await Auth.auth().signIn(with: credential)
+            self.checkUserExistsOrNavigate(uid: result.user.uid, email: nil, phone: result.user.phoneNumber)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    // MARK: - Username Check & Creation
+    func checkUsernameAvailable() async -> Bool {
+        do {
+            let snapshot = try await db.collection("users")
+                .whereField("username", isEqualTo: username)
+                .getDocuments()
+            return snapshot.documents.isEmpty
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+    
+    func createUserProfile(uid: String, email: String?, phone: String?) async {
+        let user = AppUserModel(id: uid, email: email, phoneNumber: phone, username: username)
+        do {
+            try db.collection("users").document(uid).setData(from: user)
+            currentUser = user
+            isAuthenticated = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    // MARK: - Helpers
+    private func checkUserExistsOrNavigate(uid: String, email: String?, phone: String?) {
+        Task {
+            let doc = try? await db.collection("users").document(uid).getDocument()
+            if let doc = doc, doc.exists {
+                currentUser = try? doc.data(as: AppUserModel.self)
+                isAuthenticated = true
+            } else {
+                // New user -> go to username screen
+                showUsernameScreen = true
+            }
+        }
+    }
+    
+    private func loadUser(uid: String) async throws {
+        let doc = try await db.collection("users").document(uid).getDocument()
+        if let user = try? doc.data(as: AppUserModel.self) {
+            currentUser = user
+            isAuthenticated = true
+        }
+    }
+}
