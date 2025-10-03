@@ -13,7 +13,8 @@ import FirebaseAuth
 final class HomeViewModel: ObservableObject {
     @Published var chats: [Chat] = []
     @Published var searchText: String = ""
-    
+    @Published var searchResults: [AppUserModel] = []
+
     private var db = Firestore.firestore()
     private var listener: ListenerRegistration?
     
@@ -56,6 +57,36 @@ final class HomeViewModel: ObservableObject {
                     return Chat(id: id, name: name, participants: participants, avatarURL: avatarURL, lastMessage: lastMsg)
                 } ?? []
             }
+    }
+    
+    
+    func searchUsers(query: String) async {
+        guard !query.isEmpty else {
+            self.searchResults = []
+            return
+        }
+        
+        do {
+            let usernameQuery = db.collection("users")
+                .whereField("username", isEqualTo: query)
+            
+            let phoneQuery = db.collection("users")
+                .whereField("phoneNumber", isEqualTo: query)
+            
+            // Combine both queries
+            let usernameSnapshot = try await usernameQuery.getDocuments()
+            let phoneSnapshot = try await phoneQuery.getDocuments()
+            
+            var results: [AppUserModel] = []
+            results += usernameSnapshot.documents.compactMap { try? $0.data(as: AppUserModel.self) }
+            results += phoneSnapshot.documents.compactMap { try? $0.data(as: AppUserModel.self) }
+            
+            // Remove duplicates
+            self.searchResults = Array(Set(results))
+        } catch {
+            print("❌ Error searching users: \(error.localizedDescription)")
+            self.searchResults = []
+        }
     }
     
     var filteredChats: [Chat] {

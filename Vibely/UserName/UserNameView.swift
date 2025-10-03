@@ -9,7 +9,7 @@ import SwiftUI
 import FirebaseAuth
 
 struct UsernameView: View {
-    @ObservedObject var vm: AuthViewModel
+    @EnvironmentObject var vm: AuthViewModel
     
     var body: some View {
         VStack(spacing: 20) {
@@ -26,8 +26,8 @@ struct UsernameView: View {
                     let available = await vm.checkUsernameAvailable()
                     if available, let uid = Auth.auth().currentUser?.uid {
                         await vm.createUserProfile(uid: uid, email: vm.email.isEmpty ? nil : vm.email, phone: vm.phoneNumber.isEmpty ? nil : vm.phoneNumber)
-                        vm.showUsernameScreen = false
-                        vm.isAuthenticated = true
+//                        vm.showUsernameScreen = false
+//                        vm.isAuthenticated = true
                     } else {
                         vm.errorMessage = "Username already taken"
                     }

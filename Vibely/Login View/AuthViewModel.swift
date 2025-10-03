@@ -22,26 +22,26 @@ class AuthViewModel: ObservableObject {
     @Published var showUsernameScreen = false
     @Published var errorMessage: String?
     
-    private var verificationID: String?
+    @Published var verificationID: String?
     private let db = Firestore.firestore()
     
     
     init() {
-         checkCurrentUser()
-     }
-     
-     func checkCurrentUser() {
-         if let user = Auth.auth().currentUser {
-             // Load Firestore user
-             Task {
+        checkCurrentUser()
+    }
+    
+    func checkCurrentUser() {
+        if let user = Auth.auth().currentUser {
+            // Load Firestore user
+            Task {
                 try await loadUser(uid: user.uid)
-             }
-         }
-     }
+            }
+        }
+    }
     
     
     // MARK: - Email Auth
-    func signupWithEmail() async {
+    func signupWithEmail() async throws {
         do {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             self.checkUserExistsOrNavigate(uid: result.user.uid, email: email, phone: nil)
@@ -60,28 +60,41 @@ class AuthViewModel: ObservableObject {
     }
     
     // MARK: - Phone Auth
-    func sendOTP() {
-        PhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, uiDelegate: nil) { verificationID, error in
-            if let error = error {
-                self.errorMessage = error.localizedDescription
-                return
+    func sendOTP(to phoneNumber: String) async throws -> String {
+        let formattedPhone = "+91" + phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !phoneNumber.isEmpty else {
+            throw NSError(domain: "AuthError", code: 0,
+                          userInfo: [NSLocalizedDescriptionKey: "Phone number cannot be empty"])
+        }
+
+        return try await withCheckedThrowingContinuation { [weak self] continuation in
+            PhoneAuthProvider.provider().verifyPhoneNumber(formattedPhone, uiDelegate: nil) { verificationID, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                
+                guard let verificationID = verificationID else {
+                    continuation.resume(throwing: NSError(domain: "AuthError", code: 0,
+                                                          userInfo: [NSLocalizedDescriptionKey: "Failed to get verification ID"]))
+                    return
+                }
+                
+                self?.verificationID = verificationID
+                continuation.resume(returning: verificationID)
             }
-            self.verificationID = verificationID
         }
     }
-    
-    func verifyOTP() async {
+
+    func verifyOTP(_ code: String) async throws {
         guard let verificationID = verificationID else { return }
         let credential = PhoneAuthProvider.provider().credential(
             withVerificationID: verificationID,
-            verificationCode: otpCode
+            verificationCode: code
         )
-        do {
-            let result = try await Auth.auth().signIn(with: credential)
-            self.checkUserExistsOrNavigate(uid: result.user.uid, email: nil, phone: result.user.phoneNumber)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        
+        _ = try await Auth.auth().signIn(with: credential)
     }
     
     // MARK: - Username Check & Creation
@@ -103,6 +116,7 @@ class AuthViewModel: ObservableObject {
             try db.collection("users").document(uid).setData(from: user)
             currentUser = user
             isAuthenticated = true
+            showUsernameScreen = false
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -129,4 +143,15 @@ class AuthViewModel: ObservableObject {
             isAuthenticated = true
         }
     }
+    
+    func signOut() {
+        do {
+            try Auth.auth().signOut()
+            self.currentUser = nil
+            self.isAuthenticated = false
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
 }

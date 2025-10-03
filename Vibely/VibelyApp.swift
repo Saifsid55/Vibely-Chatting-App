@@ -7,15 +7,37 @@
 
 import SwiftUI
 import Firebase
+import FirebaseAuth
+import UIKit
+
+// 1️⃣ Minimal AppDelegate for Firebase
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
+    
+//    // Forward notifications to Firebase Auth
+//    func application(_ application: UIApplication,
+//                     didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+//                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+//        
+//        if Auth.auth().canHandleNotification(userInfo) {
+//            completionHandler(.noData)
+//            return
+//        }
+//        
+//        completionHandler(.newData)
+//    }
+}
+
 
 @main
 struct VibelyApp: App {
     
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authVM = AuthViewModel()
-    
-    init() {
-        FirebaseApp.configure()
-    }
     
     var body: some Scene {
         WindowGroup {
@@ -33,7 +55,7 @@ struct RootView: View {
             if authVM.isAuthenticated {
                 HomeView()
             } else if authVM.showUsernameScreen {
-                UsernameView(vm: authVM)
+                UsernameView()
             } else {
                 LoginView()
             }

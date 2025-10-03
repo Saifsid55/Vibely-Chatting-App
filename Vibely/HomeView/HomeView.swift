@@ -26,17 +26,42 @@ struct HomeView: View {
                 .ignoresSafeArea()
                 
                 VStack {
-                    // Search Bar
                     TextField("Search users...", text: $viewModel.searchText)
                         .padding(8)
                         .background(Color(.systemGray6))
                         .clipShape(Capsule())
                         .padding(.horizontal)
+                        .onChange(of: viewModel.searchText) { oldValue, newValue in
+                            Task {
+                                await viewModel.searchUsers(query: newValue)
+                            }
+                        }
+                    if !viewModel.searchResults.isEmpty {
+                        List(viewModel.searchResults) { user in
+                            Button {
+                                // TODO: Start a chat with selected user
+                            } label: {
+                                HStack {
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 40, height: 40)
+                                        .overlay(Text(user.username.prefix(1)).foregroundColor(.white))
+                                    VStack(alignment: .leading) {
+                                        Text(user.username).font(.headline)
+                                        Text(user.phoneNumber ?? "").font(.subheadline).foregroundColor(.gray)
+                                    }
+                                }
+                            }
+                        }
+                        .listStyle(.plain)
+                        .frame(maxHeight: 200) // optional
+                    }
                     
                     ChatList(chats: viewModel.filteredChats,
                              formatDate: viewModel.formatDate,
                              path: $path)
                 }
+                
                 .navigationTitle("Chats")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -67,7 +92,7 @@ struct HomeView: View {
                 case .chat(let chat):
                     ChatDetailView(chat: chat)
                 case .profile:
-                    LoginView()
+                    ProfileView()
                 }
             }
         }
