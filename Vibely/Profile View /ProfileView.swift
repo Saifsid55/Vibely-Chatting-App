@@ -31,6 +31,18 @@ struct ProfileView: View {
                     .padding(.horizontal)
             }
             
+            Button("Delete Account") {
+                Task {
+                    do {
+                        try await vm.deleteUserAccount()
+                        print("✅ Account deleted successfully")
+                        // Navigate back to login/signup screen
+                    } catch {
+                        print("❌ Failed to delete account:", error.localizedDescription)
+                    }
+                }
+            }
+            
             Spacer()
         }
     }

@@ -114,6 +114,10 @@ class AuthViewModel: ObservableObject {
         let user = AppUserModel(id: uid, email: email, phoneNumber: phone, username: username)
         do {
             try db.collection("users").document(uid).setData(from: user)
+            
+            try await db.collection("users").document(uid).updateData([
+                "username_lowercase": username.lowercased()
+            ])
             currentUser = user
             isAuthenticated = true
             showUsernameScreen = false
@@ -152,6 +156,42 @@ class AuthViewModel: ObservableObject {
         } catch {
             self.errorMessage = error.localizedDescription
         }
+    }
+    
+    func deleteUserAccount() async throws {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "DeleteAccount", code: 0, userInfo: [NSLocalizedDescriptionKey: "No current user"])
+        }
+        
+        let db = Firestore.firestore()
+        
+        // 1️⃣ Delete user document
+        try await db.collection("users").document(uid).delete()
+        
+        // 2️⃣ Remove user from chats & optionally delete their messages
+        let chatsQuery = try await db.collection("chats")
+            .whereField("participants", arrayContains: uid)
+            .getDocuments()
+        
+        for chatDoc in chatsQuery.documents {
+            let chatRef = chatDoc.reference
+            
+            // Delete user's messages in this chat
+            let messagesSnapshot = try await chatRef.collection("messages").getDocuments()
+            for messageDoc in messagesSnapshot.documents {
+                if messageDoc.data()["senderId"] as? String == uid {
+                    try await messageDoc.reference.delete()
+                }
+            }
+            
+            // Remove user from participants array
+            try await chatRef.updateData([
+                "participants": FieldValue.arrayRemove([uid])
+            ])
+        }
+        
+        // 3️⃣ Delete Firebase Auth account
+        try await Auth.auth().currentUser?.delete()
     }
     
 }

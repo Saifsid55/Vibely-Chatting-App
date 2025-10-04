@@ -15,4 +15,12 @@ struct AppUserModel: Identifiable, Codable, Hashable {
     var username: String
     var createdAt: Date = Date()
     var avatarURL: String?
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: AppUserModel, rhs: AppUserModel) -> Bool {
+        lhs.id == rhs.id
+    }
 }

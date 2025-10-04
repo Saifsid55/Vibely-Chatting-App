@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
@@ -40,6 +41,17 @@ struct HomeView: View {
                         List(viewModel.searchResults) { user in
                             Button {
                                 // TODO: Start a chat with selected user
+                                Task {
+                                    do {
+                                        let chat = try await viewModel.createOrFetchChat(with: user)
+                                        path.append(.chat(chat)) // navigate to chat
+                                        viewModel.searchText = ""  // optional: clear search
+                                        viewModel.searchResults = []
+                                    } catch {
+                                        print("❌ Failed to create/fetch chat: \(error.localizedDescription)")
+                                    }
+                                }
+
                             } label: {
                                 HStack {
                                     Circle()
@@ -93,6 +105,18 @@ struct HomeView: View {
                     ChatDetailView(chat: chat)
                 case .profile:
                     ProfileView()
+                }
+            }
+            .onAppear {
+                if Auth.auth().currentUser != nil {
+                    viewModel.listenToChats()
+                } else {
+                    // Optionally, observe Auth state and start listening when user logs in
+                    Auth.auth().addStateDidChangeListener { _, user in
+                        if user != nil {
+                            viewModel.listenToChats()
+                        }
+                    }
                 }
             }
         }

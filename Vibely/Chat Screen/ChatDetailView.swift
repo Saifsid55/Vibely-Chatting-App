@@ -81,7 +81,9 @@ struct MessageBubble: View {
     
     var body: some View {
         HStack {
-            if message.isMe { Spacer() }
+            if message.isMe {
+                Spacer()
+            }
             
             Group {
                 switch message.messageType {
@@ -105,7 +107,9 @@ struct MessageBubble: View {
             .cornerRadius(16)
             .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
             
-            if !message.isMe { Spacer() }
+            if !message.isMe {
+                Spacer()
+            }
         }
     }
 }
