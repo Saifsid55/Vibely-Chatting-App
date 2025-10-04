@@ -33,6 +33,7 @@ class AuthViewModel: ObservableObject {
     func checkCurrentUser() {
         if let user = Auth.auth().currentUser {
             // Load Firestore user
+            
             Task {
                 try await loadUser(uid: user.uid)
             }

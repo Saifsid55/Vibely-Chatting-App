@@ -81,38 +81,75 @@ struct MessageBubble: View {
     
     var body: some View {
         HStack {
-            if message.isMe {
-                Spacer()
+            if !message.isMe {
+                // Receiver messages on the left
+                bubbleContent
+                Spacer(minLength: 50) // Pushes bubble to left
+            } else {
+                // Sender messages on the right
+                Spacer(minLength: 50)
+                bubbleContent
             }
-            
-            Group {
-                switch message.messageType {
-                case .text:
-                    Text(message.text ?? "")
-                        .padding(8)
-                case .image:
-                    Image(systemName: "photo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 150, height: 150)
-                case .audio:
+        }
+        .padding(.horizontal)
+    }
+    
+    private var bubbleContent: some View {
+        Group {
+            switch message.messageType {
+            case .text:
+                Text(message.text ?? "")
+                    .padding(12)
+                    .background(message.isMe ? Color.blue : Color.gray.opacity(0.3))
+                    .foregroundColor(message.isMe ? .white : .black)
+                    .cornerRadius(16, corners: message.isMe ? [.topLeft, .topRight, .bottomLeft] : [.topLeft, .topRight, .bottomRight])
+            case .image:
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 150, height: 150)
+                    .clipped()
+                    .cornerRadius(16)
+            case .audio:
+                HStack {
                     Image(systemName: "waveform")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 150, height: 50)
+                        .frame(height: 30)
+                    Text("Audio")
+                        .foregroundColor(.white)
+                        .font(.caption)
                 }
-            }
-            .background(message.isMe ? Color.blue : Color.gray.opacity(0.3))
-            .foregroundColor(message.isMe ? .white : .black)
-            .cornerRadius(16)
-            .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
-            
-            if !message.isMe {
-                Spacer()
+                .padding(12)
+                .background(message.isMe ? Color.blue : Color.gray.opacity(0.3))
+                .cornerRadius(16)
             }
         }
+        .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
     }
 }
+
+// Rounded corners helper
+struct RoundedCorner: Shape {
+    var radius: CGFloat = 16
+    var corners: UIRectCorner = .allCorners
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
 
 
 

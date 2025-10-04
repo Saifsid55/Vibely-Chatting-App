@@ -84,7 +84,6 @@ final class HomeViewModel: ObservableObject {
         
         do {
             let lowercasedQuery = query.lowercased()
-            
             let usernameQuery = db.collection("users")
                 .whereField("username_lowercase", isEqualTo: lowercasedQuery)
             
@@ -97,6 +96,10 @@ final class HomeViewModel: ObservableObject {
             var results: [AppUserModel] = []
             results += usernameSnapshot.documents.compactMap { try? $0.data(as: AppUserModel.self) }
             results += phoneSnapshot.documents.compactMap { try? $0.data(as: AppUserModel.self) }
+            
+            if let currentUid = Auth.auth().currentUser?.uid {
+                results.removeAll { $0.id == currentUid }
+            }
             
             self.searchResults = Array(Set(results))
         } catch {
@@ -179,6 +182,26 @@ final class HomeViewModel: ObservableObject {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+    
+    // MARK: - Delete Chat
+    func deleteChat(_ chat: Chat, deleteFromBackend: Bool = true) async {
+        guard let chatId = chat.id else { return }
+        
+        if deleteFromBackend {
+            do {
+                try await db.collection("chats").document(chatId).delete()
+                print("✅ Chat deleted from backend")
+            } catch {
+                print("❌ Error deleting chat: \(error.localizedDescription)")
+            }
+        }
+        
+        // Remove locally from array
+        if let index = chats.firstIndex(where: { $0.id == chatId }) {
+            chats.remove(at: index)
+        }
+    }
+
     
     deinit {
         listener?.remove()

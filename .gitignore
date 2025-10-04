@@ -1,2 +1,51 @@
+
+# Xcode
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.xcworkspace/xcuserdata/
+*.xcuserdatad/
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
 *.xcuserstate
 
+# Xcode temporary files
+*.swp
+*.tmp
+*.DS_Store
+*.plist.lock
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Swift Package Manager
+Packages/
+.swiftpm/
+.build/
+
+# Google plist (if you don't want to commit it)
+GoogleService-Info.plist
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+fastlane/README.md
+
+# Node (if using React Native or JS dependencies)
+node_modules/
+
+# Others
+*.log

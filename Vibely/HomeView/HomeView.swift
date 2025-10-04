@@ -72,6 +72,7 @@ struct HomeView: View {
                     ChatList(chats: viewModel.filteredChats,
                              formatDate: viewModel.formatDate,
                              path: $path)
+                    .environmentObject(viewModel)
                 }
                 
                 .navigationTitle("Chats")
@@ -127,6 +128,9 @@ struct ChatList: View {
     let chats: [Chat]
     let formatDate: (Date) -> String
     @Binding var path: [Route]
+    @State private var showDeleteConfirm = false
+    @State private var chatToDelete: Chat? = nil
+    @EnvironmentObject var homeVM: HomeViewModel
     
     var body: some View {
         List(chats) { chat in
@@ -134,10 +138,31 @@ struct ChatList: View {
                 ChatRow(chat: chat,
                         formattedDate: chat.lastMessage.map { formatDate($0.timestamp) } ?? "")
             }
+            .contextMenu {
+                Button(role: .destructive) {
+                    chatToDelete = chat
+                    showDeleteConfirm = true
+                } label: {
+                    Label("Delete Chat", systemImage: "trash")
+                }
+            }
         }
         .listStyle(.plain)
+        .confirmationDialog("Delete this chat?",
+                            isPresented: $showDeleteConfirm,
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let chat = chatToDelete {
+                    Task {
+                        await homeVM.deleteChat(chat, deleteFromBackend: true)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
     }
 }
+
 
 struct ChatRow: View {
     let chat: Chat
