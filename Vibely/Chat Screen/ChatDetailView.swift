@@ -26,7 +26,7 @@ struct ChatDetailView: View {
                     }
                     .padding()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 1.0, maxWidth: .infinity, minHeight: 1.0, maxHeight: .infinity)
             }
             
             // Input Bar
@@ -49,28 +49,28 @@ struct ChatDetailView: View {
             .padding(.bottom, 8)
             .background(Color(.systemGray6))
         }
-        .navigationTitle("") // Hide default title
+        .navigationTitle("") // hide default title
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
+        .navigationBarBackButtonHidden(false) // ✅ Hide system back button
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) { // Changed from .navigation to .principal
-                ChatToolbarContent(
+            ToolbarItem(placement: .navigationBarLeading) {
+                ChatToolbarView(
                     chatName: viewModel.chatName,
                     chatInitial: viewModel.chatInitial,
-                    avatarURL: viewModel.chat.avatarURL,   // ✅ pass avatar
-                    isOnline: true
+                    avatarURL: viewModel.chat.avatarURL,
+                    onDismiss: { dismiss() }
                 )
             }
         }
-        .gesture(
-            // Add drag gesture to handle swipe back manually
-            DragGesture()
-                .onEnded { value in
-                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
-                        dismiss()
-                    }
-                }
-        )
+        //        .gesture(
+        //            // Add drag gesture to handle swipe back manually
+        //            DragGesture()
+        //                .onEnded { value in
+        //                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+        //                        dismiss()
+        //                    }
+        //                }
+        //        )
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
@@ -151,21 +151,25 @@ extension View {
 }
 
 
-
-
-struct ChatToolbarContent: View {
+struct ChatToolbarView: View {
     let chatName: String
     let chatInitial: String
-    let avatarURL: String?     // ✅ Add avatar URL
-    let isOnline: Bool
+    let avatarURL: String?
+    let onDismiss: () -> Void
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "chevron.left")
-                .foregroundColor(.blue)
+        HStack(spacing: 8) {
+            // Back Button
+//            Button(action: {
+//                onDismiss()
+//            }) {
+//                Image(systemName: "chevron.left")
+//                    .foregroundColor(.blue)
+//            }
             
-            if let url = avatarURL, !url.isEmpty {
-                AsyncImage(url: URL(string: url)) { image in
+            // Avatar
+            if let url = avatarURL, !url.isEmpty, let avatarURL = URL(string: url) {
+                AsyncImage(url: avatarURL) { image in
                     image.resizable()
                         .scaledToFill()
                 } placeholder: {
@@ -182,19 +186,18 @@ struct ChatToolbarContent: View {
                     .overlay(Text(chatInitial).foregroundColor(.white))
             }
             
+            // Name and status
             VStack(alignment: .leading, spacing: 2) {
                 Text(chatName)
                     .font(.headline)
                     .lineLimit(1)
                 
-                Text(isOnline ? "Online" : "Offline")
+                Text("Online")
                     .font(.subheadline)
-                    .foregroundColor(isOnline ? .green : .gray)
+                    .foregroundColor(.green)
             }
-            
-            Spacer()
         }
-        .padding(.horizontal)
     }
 }
+
 

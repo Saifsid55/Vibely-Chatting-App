@@ -4,7 +4,6 @@
 //
 //  Created by Mohd Saif on 06/09/25.
 //
-
 import Foundation
 import FirebaseFirestore
 import FirebaseAuth
@@ -27,19 +26,14 @@ final class HomeViewModel: ObservableObject {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         listener?.remove()
         
-        // ✅ Try with backticks for nested field path
+        // ✅ Listen to all chats, sort in memory
         listener = db.collection("chats")
             .whereField("participants", arrayContains: uid)
-            .order(by: FieldPath(["lastMessage", "timestamp"]), descending: true)
-//            .order(by: "updatedAt", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
                 if let error = error {
                     print("❌ Error fetching chats: \(error.localizedDescription)")
-                    if let snapshot = snapshot {
-                        print("📄 Partial snapshot: \(snapshot.documents.map { $0.data() })")
-                    }
                     return
                 }
                 
@@ -66,7 +60,6 @@ final class HomeViewModel: ObservableObject {
                 } ?? []
                 
                 // ✅ Sort manually in-memory by lastMessage timestamp
-                
                 self.chats = fetchedChats.sorted { c1, c2 in
                     let t1 = c1.lastMessage?.timestamp ?? Date.distantPast
                     let t2 = c2.lastMessage?.timestamp ?? Date.distantPast
@@ -115,7 +108,7 @@ final class HomeViewModel: ObservableObject {
             let otherUid = user.id
         else { throw NSError(domain: "NoUser", code: 401) }
         
-        // 1️⃣ Look for existing chat
+        // 1️⃣ Look for existing chat in Firestore
         let querySnapshot = try await db.collection("chats")
             .whereField("participants", arrayContains: currentUid)
             .getDocuments()
@@ -141,33 +134,23 @@ final class HomeViewModel: ObservableObject {
                 lastMsg = LastMessage(text: text, senderId: senderId, timestamp: timestamp.dateValue())
             }
             
+            print("✅ Found existing chat: \(id)")
             return Chat(id: id, name: name, participants: participants, avatarURL: avatarURL, lastMessage: lastMsg)
         }
         
-        // 2️⃣ Otherwise, create new chat
-        let chatId = UUID().uuidString
-        let newChat = Chat(
-            id: chatId,
+        // 2️⃣ Return a temporary chat object (NOT saved to Firestore yet)
+        // It will be created when the first message is sent
+        let temporaryChat = Chat(
+            id: nil,  // ✅ nil ID indicates this chat doesn't exist in Firestore yet
             name: user.username,
             participants: [currentUid, otherUid],
             avatarURL: user.avatarURL,
-            lastMessage: LastMessage(text: "", senderId: "", timestamp: Date())
+            lastMessage: nil
         )
         
-        try await db.collection("chats").document(chatId).setData([
-            "name": newChat.name,
-            "participants": newChat.participants,
-            "avatarURL": newChat.avatarURL as Any,
-            "lastMessage": [
-                "text": "",
-                "senderId": "",
-                "timestamp": Timestamp(date: Date())
-            ],
-            "updatedAt": FieldValue.serverTimestamp()
-        ])
+        print("✅ Created temporary chat object (not saved to Firestore)")
         
-        chats.insert(newChat, at: 0)
-        return newChat
+        return temporaryChat
     }
     
     // MARK: - Filtered Chats for UI
@@ -201,7 +184,7 @@ final class HomeViewModel: ObservableObject {
             chats.remove(at: index)
         }
     }
-
+    
     
     deinit {
         listener?.remove()

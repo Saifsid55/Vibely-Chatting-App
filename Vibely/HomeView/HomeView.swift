@@ -76,6 +76,7 @@ struct HomeView: View {
                 }
                 
                 .navigationTitle("Chats")
+                .navigationBarTitleDisplayMode(.inline)  // ✅ Add this line
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -182,21 +183,21 @@ struct ChatRow: View {
                 Circle()
                     .fill(Color.blue)
                     .frame(width: 40, height: 40)
-                    .overlay(Text(chat.name.prefix(1)).foregroundColor(.white))
+                    .overlay(Text(chat.name.prefix(1)).foregroundStyle(.white))
             }
             
             VStack(alignment: .leading) {
                 Text(chat.name).font(.headline)
-                Text(chat.lastMessage?.text ?? "")
+                Text(chat.lastMessage?.text ?? "Say hello 👋")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .lineLimit(1)
             }
             
             Spacer()
             Text(formattedDate)
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
         }
     }
 }
