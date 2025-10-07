@@ -77,7 +77,8 @@ struct RootView: View {
             } else if authVM.showUsernameScreen {
                 UsernameView()
             } else {
-                LoginView()
+                WelcomeView()
+                    .environmentObject(authVM)
             }
         }
     }
