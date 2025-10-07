@@ -66,6 +66,36 @@
             endingLineNumber = "59"
             landmarkName = "loginWithEmail()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "66F191D4-A8AD-43B7-B704-3FC59B0F9A2A - 6c8589c2636028e4"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(6) suspend resume partial function for Vibely.AuthViewModel.loginWithEmail() async -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "59"
+                  endingLineNumber = "59">
+               </Location>
+               <Location
+                  uuid = "66F191D4-A8AD-43B7-B704-3FC59B0F9A2A - e90fc2dc06c2ffe5"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(7) suspend resume partial function for Vibely.AuthViewModel.loginWithEmail() async -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "59"
+                  endingLineNumber = "59">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -82,6 +112,50 @@
             endingLineNumber = "55"
             landmarkName = "loginWithEmail()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "8BAD6AD2-1EF9-4C65-941F-62558112DED5 - 264a368fc92f546"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for Vibely.AuthViewModel.loginWithEmail() async -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "56"
+                  endingLineNumber = "56">
+               </Location>
+               <Location
+                  uuid = "8BAD6AD2-1EF9-4C65-941F-62558112DED5 - e6a068c0c8a5427b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for Vibely.AuthViewModel.loginWithEmail() async -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "56"
+                  endingLineNumber = "56">
+               </Location>
+               <Location
+                  uuid = "8BAD6AD2-1EF9-4C65-941F-62558112DED5 - 6c8589c263602849"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(6) suspend resume partial function for Vibely.AuthViewModel.loginWithEmail() async -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "56"
+                  endingLineNumber = "56">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -98,6 +172,36 @@
             endingLineNumber = "47"
             landmarkName = "signupWithEmail()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "E926923A-2835-49D1-BDCB-13EC5B08769A - 23861c28c46069d3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for Vibely.AuthViewModel.signupWithEmail() async throws -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "47"
+                  endingLineNumber = "47">
+               </Location>
+               <Location
+                  uuid = "E926923A-2835-49D1-BDCB-13EC5B08769A - bc28e2e0a0ab45fe"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for Vibely.AuthViewModel.signupWithEmail() async throws -&gt; ()"
+                  moduleName = "Vibely.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/mohdsaif/Desktop/Vibely/Vibely/Login%20View/AuthViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "47"
+                  endingLineNumber = "47">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

@@ -13,22 +13,20 @@ final class HomeViewModel: ObservableObject {
     @Published var chats: [Chat] = []
     @Published var searchText: String = ""
     @Published var searchResults: [AppUserModel] = []
+    @Published var allUsersDict: [String: AppUserModel] = [:]
     
     private var db = Firestore.firestore()
     private var listener: ListenerRegistration?
     
-    init() {
-        // Remove auto call from init to prevent listener running before user logs in
-    }
+    init() { }
     
-    // MARK: - Listen for all chats where current user is a participant
+    // MARK: - Listen for chats where current user is a participant
     func listenToChats() {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
         listener?.remove()
         
-        // ✅ Listen to all chats, sort in memory
         listener = db.collection("chats")
-            .whereField("participants", arrayContains: uid)
+            .whereField("participants", arrayContains: currentUid)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
@@ -37,17 +35,15 @@ final class HomeViewModel: ObservableObject {
                     return
                 }
                 
-                print("🟢 Chats updated for user \(uid): \(snapshot?.documents.count ?? 0) chats found")
-                
                 let fetchedChats: [Chat] = snapshot?.documents.compactMap { doc in
                     let data = doc.data()
                     let id = doc.documentID
-                    let name = data["name"] as? String ?? "Unknown"
-                    let avatarURL = data["avatarURL"] as? String
+                    let participants = Array(Set(data["participants"] as? [String] ?? []))
                     
-                    var participants = Array(Set(data["participants"] as? [String] ?? []))
-                    if !participants.contains(uid) { participants.append(uid) }
+                    // Avatar dictionary per participant
+                    let avatarData = data["avatarURL"] as? [String: String]
                     
+                    // Last message
                     var lastMsg: LastMessage? = nil
                     if let lm = data["lastMessage"] as? [String: Any],
                        let text = lm["text"] as? String,
@@ -56,10 +52,10 @@ final class HomeViewModel: ObservableObject {
                         lastMsg = LastMessage(text: text, senderId: senderId, timestamp: timestamp.dateValue())
                     }
                     
-                    return Chat(id: id, name: name, participants: participants, avatarURL: avatarURL, lastMessage: lastMsg)
+                    return Chat(id: id, participants: participants, avatarURL: avatarData, lastMessage: lastMsg)
                 } ?? []
                 
-                // ✅ Sort manually in-memory by lastMessage timestamp
+                // Sort by last message timestamp
                 self.chats = fetchedChats.sorted { c1, c2 in
                     let t1 = c1.lastMessage?.timestamp ?? Date.distantPast
                     let t2 = c2.lastMessage?.timestamp ?? Date.distantPast
@@ -68,10 +64,24 @@ final class HomeViewModel: ObservableObject {
             }
     }
     
+    // MARK: - Load all users for dynamic chat names
+    func loadAllUsers() async {
+        do {
+            let snapshot = try await db.collection("users").getDocuments()
+            let users = snapshot.documents.compactMap { try? $0.data(as: AppUserModel.self) }
+            allUsersDict = Dictionary(uniqueKeysWithValues: users.compactMap { user in
+                guard let uid = user.id else { return nil }
+                return (uid, user)
+            })
+        } catch {
+            print("❌ Failed to load users: \(error.localizedDescription)")
+        }
+    }
+    
     // MARK: - Search Users
     func searchUsers(query: String) async {
         guard !query.isEmpty else {
-            self.searchResults = []
+            searchResults = []
             return
         }
         
@@ -101,30 +111,24 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Create or fetch chat with user
+    // MARK: - Create or fetch chat with another user
     func createOrFetchChat(with user: AppUserModel) async throws -> Chat {
-        guard
-            let currentUid = Auth.auth().currentUser?.uid,
-            let otherUid = user.id
-        else { throw NSError(domain: "NoUser", code: 401) }
+        guard let currentUid = Auth.auth().currentUser?.uid,
+              let otherUid = user.id else { throw NSError(domain: "NoUser", code: 401) }
         
-        // 1️⃣ Look for existing chat in Firestore
+        // 1️⃣ Look for existing chat
         let querySnapshot = try await db.collection("chats")
             .whereField("participants", arrayContains: currentUid)
             .getDocuments()
         
-        if let existing = querySnapshot.documents.first(where: { doc in
+        if let existingDoc = querySnapshot.documents.first(where: { doc in
             let participants = doc["participants"] as? [String] ?? []
             return participants.contains(otherUid)
         }) {
-            // Decode existing chat
-            let data = existing.data()
-            let id = existing.documentID
-            let name = data["name"] as? String ?? "Unknown"
-            let avatarURL = data["avatarURL"] as? String
-            var participants = Array(Set(data["participants"] as? [String] ?? []))
-            if !participants.contains(currentUid) { participants.append(currentUid) }
-            if !participants.contains(otherUid) { participants.append(otherUid) }
+            let data = existingDoc.data()
+            let id = existingDoc.documentID
+            let participants = Array(Set(data["participants"] as? [String] ?? []))
+            let avatarData = data["avatarURL"] as? [String: String]
             
             var lastMsg: LastMessage? = nil
             if let lm = data["lastMessage"] as? [String: Any],
@@ -134,39 +138,36 @@ final class HomeViewModel: ObservableObject {
                 lastMsg = LastMessage(text: text, senderId: senderId, timestamp: timestamp.dateValue())
             }
             
-            print("✅ Found existing chat: \(id)")
-            return Chat(id: id, name: name, participants: participants, avatarURL: avatarURL, lastMessage: lastMsg)
+            return Chat(id: id, participants: participants, avatarURL: avatarData, lastMessage: lastMsg)
         }
         
-        // 2️⃣ Return a temporary chat object (NOT saved to Firestore yet)
-        // It will be created when the first message is sent
-        let temporaryChat = Chat(
-            id: nil,  // ✅ nil ID indicates this chat doesn't exist in Firestore yet
-            name: user.username,
-            participants: [currentUid, otherUid],
-            avatarURL: user.avatarURL,
-            lastMessage: nil
-        )
+        // 2️⃣ Create temporary chat (first message will save it to Firestore)
+        let avatarDict: [String: String] = [
+            currentUid: allUsersDict[currentUid]?.avatarURL ?? "",
+            otherUid: user.avatarURL ?? ""
+        ]
         
-        print("✅ Created temporary chat object (not saved to Firestore)")
-        
-        return temporaryChat
+        return Chat(id: nil, participants: [currentUid, otherUid], avatarURL: avatarDict, lastMessage: nil)
     }
     
-    // MARK: - Filtered Chats for UI
+    // MARK: - Filtered chats
     var filteredChats: [Chat] {
         if searchText.isEmpty { return chats }
-        return chats.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+        return chats.filter { chat in
+            let currentUid = Auth.auth().currentUser?.uid ?? ""
+            let name = chat.displayName(for: currentUid, allUsers: allUsersDict)
+            return name.lowercased().contains(searchText.lowercased())
+        }
     }
     
-    // MARK: - Format Date
+    // MARK: - Format date
     func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
     
-    // MARK: - Delete Chat
+    // MARK: - Delete chat
     func deleteChat(_ chat: Chat, deleteFromBackend: Bool = true) async {
         guard let chatId = chat.id else { return }
         
@@ -179,14 +180,28 @@ final class HomeViewModel: ObservableObject {
             }
         }
         
-        // Remove locally from array
         if let index = chats.firstIndex(where: { $0.id == chatId }) {
             chats.remove(at: index)
         }
     }
     
-    
     deinit {
         listener?.remove()
+    }
+}
+
+
+extension HomeViewModel {
+    
+    func chatDisplayName(_ chat: Chat) -> String {
+        guard let currentUid = Auth.auth().currentUser?.uid else { return "Unknown" }
+        let otherUid = chat.participants.first { $0 != currentUid } ?? chat.participants.first ?? ""
+        return allUsersDict[otherUid]?.username ?? "Unknown"
+    }
+    
+    func chatDisplayAvatar(_ chat: Chat) -> String? {
+        guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
+        let otherUid = chat.participants.first { $0 != currentUid } ?? chat.participants.first ?? ""
+        return allUsersDict[otherUid]?.avatarURL
     }
 }

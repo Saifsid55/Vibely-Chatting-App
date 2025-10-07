@@ -51,7 +51,7 @@ struct HomeView: View {
                                         print("❌ Failed to create/fetch chat: \(error.localizedDescription)")
                                     }
                                 }
-
+                                
                             } label: {
                                 HStack {
                                     Circle()
@@ -104,19 +104,22 @@ struct HomeView: View {
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .chat(let chat):
-                    ChatDetailView(chat: chat)
+                    ChatDetailView(chat: chat, allUsers: viewModel.allUsersDict)
                 case .profile:
                     ProfileView()
                 }
             }
             .onAppear {
-                if Auth.auth().currentUser != nil {
-                    viewModel.listenToChats()
-                } else {
-                    // Optionally, observe Auth state and start listening when user logs in
-                    Auth.auth().addStateDidChangeListener { _, user in
-                        if user != nil {
-                            viewModel.listenToChats()
+                Task {
+                    await viewModel.loadAllUsers()
+                    if Auth.auth().currentUser != nil {
+                        viewModel.listenToChats()
+                    } else {
+                        // Optionally, observe Auth state and start listening when user logs in
+                        Auth.auth().addStateDidChangeListener { _, user in
+                            if user != nil {
+                                viewModel.listenToChats()
+                            }
                         }
                     }
                 }
@@ -168,10 +171,12 @@ struct ChatList: View {
 struct ChatRow: View {
     let chat: Chat
     let formattedDate: String
+    @EnvironmentObject var homeVM: HomeViewModel
     
     var body: some View {
         HStack {
-            if let avatar = chat.avatarURL, let url = URL(string: avatar) {
+            if let avatarURL = homeVM.chatDisplayAvatar(chat),
+               let url = URL(string: avatarURL) {
                 AsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -183,11 +188,12 @@ struct ChatRow: View {
                 Circle()
                     .fill(Color.blue)
                     .frame(width: 40, height: 40)
-                    .overlay(Text(chat.name.prefix(1)).foregroundStyle(.white))
+                    .overlay(Text(homeVM.chatDisplayName(chat).prefix(1))
+                        .foregroundColor(.white))
             }
             
             VStack(alignment: .leading) {
-                Text(chat.name).font(.headline)
+                Text(homeVM.chatDisplayName(chat))
                 Text(chat.lastMessage?.text ?? "Say hello 👋")
                     .font(.subheadline)
                     .foregroundStyle(.gray)

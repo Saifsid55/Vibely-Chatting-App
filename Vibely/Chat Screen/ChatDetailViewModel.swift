@@ -17,12 +17,16 @@ class ChatViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
+    private let allUsers: [String: AppUserModel]
     var chat: Chat
     private let db = Firestore.firestore()          // ✅ Added Firestore reference
     private var listener: ListenerRegistration?     // ✅ To keep real-time updates
+    private let currentUid: String
     
-    init(chat: Chat) {
+    init(chat: Chat, allUsers: [String: AppUserModel]) {
         self.chat = chat
+        self.allUsers = allUsers
+        self.currentUid = Auth.auth().currentUser?.uid ?? ""
         
         // Only start listener if chat exists in Firestore
         if let chatId = chat.id {
@@ -30,7 +34,6 @@ class ChatViewModel: ObservableObject {
         } else {
             messages = [] // temporary chat, no Firestore yet
         }
-        // ✅ Start Firestore listener instead of dummy load
     }
     
     deinit {
@@ -38,8 +41,21 @@ class ChatViewModel: ObservableObject {
     }
     
     // MARK: - Chat Info for View
-    var chatName: String { chat.name }
-    var chatInitial: String { String(chat.name.prefix(1)) }
+    var chatName: String {
+        // Use helper logic instead of chat.name
+        let otherUid = chat.participants.first { $0 != currentUid } ?? chat.participants.first ?? ""
+        return allUsers[otherUid]?.username ?? "Unknown"
+    }
+    
+    var chatInitial: String {
+        String(chatName.prefix(1))
+    }
+    
+    var chatAvatarURL: String? {
+        guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
+        let otherUid = chat.participants.first { $0 != currentUid } ?? chat.participants.first ?? ""
+        return chat.avatarURL?[otherUid] ?? allUsers[otherUid]?.avatarURL
+    }
     
     // MARK: - Real-time listener (was loadMessages)
     private func startListening(chatId: String) {
@@ -78,7 +94,6 @@ class ChatViewModel: ObservableObject {
                 chat.id = chatRef.documentID
                 
                 let chatData: [String: Any] = [
-                    "name": chat.name,
                     "participants": chat.participants,
                     "avatarURL": chat.avatarURL ?? "",
                     "lastMessage": [

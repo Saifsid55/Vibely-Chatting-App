@@ -10,9 +10,9 @@ struct ChatDetailView: View {
     @StateObject private var viewModel: ChatViewModel
     @Environment(\.dismiss) private var dismiss
     
-    init(chat: Chat) {
-        _viewModel = StateObject(wrappedValue: ChatViewModel(chat: chat))
-    }
+    init(chat: Chat, allUsers: [String: AppUserModel]) {
+          _viewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, allUsers: allUsers))
+      }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -57,7 +57,7 @@ struct ChatDetailView: View {
                 ChatToolbarView(
                     chatName: viewModel.chatName,
                     chatInitial: viewModel.chatInitial,
-                    avatarURL: viewModel.chat.avatarURL,
+                    avatarURL: viewModel.chatAvatarURL,
                     onDismiss: { dismiss() }
                 )
             }
