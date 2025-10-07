@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @State private var path: [Route] = []  // navigation path
+    @State private var path: [Route] = []
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -26,33 +27,69 @@ struct HomeView: View {
                 .ignoresSafeArea()
                 
                 VStack {
-                    // Search Bar
                     TextField("Search users...", text: $viewModel.searchText)
                         .padding(8)
                         .background(Color(.systemGray6))
                         .clipShape(Capsule())
                         .padding(.horizontal)
+                        .onChange(of: viewModel.searchText) { oldValue, newValue in
+                            Task {
+                                await viewModel.searchUsers(query: newValue)
+                            }
+                        }
+                    if !viewModel.searchResults.isEmpty {
+                        List(viewModel.searchResults) { user in
+                            Button {
+                                // TODO: Start a chat with selected user
+                                Task {
+                                    do {
+                                        let chat = try await viewModel.createOrFetchChat(with: user)
+                                        path.append(.chat(chat)) // navigate to chat
+                                        viewModel.searchText = ""  // optional: clear search
+                                        viewModel.searchResults = []
+                                    } catch {
+                                        print("❌ Failed to create/fetch chat: \(error.localizedDescription)")
+                                    }
+                                }
+                                
+                            } label: {
+                                HStack {
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 40, height: 40)
+                                        .overlay(Text(user.username.prefix(1)).foregroundColor(.white))
+                                    VStack(alignment: .leading) {
+                                        Text(user.username).font(.headline)
+                                        Text(user.phoneNumber ?? "").font(.subheadline).foregroundColor(.gray)
+                                    }
+                                }
+                            }
+                        }
+                        .listStyle(.plain)
+                        .frame(maxHeight: 200) // optional
+                    }
                     
                     ChatList(chats: viewModel.filteredChats,
                              formatDate: viewModel.formatDate,
                              path: $path)
+                    .environmentObject(viewModel)
                 }
+                
                 .navigationTitle("Chats")
+                .navigationBarTitleDisplayMode(.inline)  // ✅ Add this line
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: {
+                        Button {
                             path.append(.profile)
-                            // Open Settings/Profile screen
-                        }) {
+                        } label: {
                             Image(systemName: "gearshape")
                         }
                     }
                 }
-                // Floating Action Button
                 .overlay(alignment: .bottomTrailing) {
-                    Button(action: {
-                        // Start new chat
-                    }) {
+                    Button {
+                        // TODO: new chat flow
+                    } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 24))
                             .padding()
@@ -64,46 +101,29 @@ struct HomeView: View {
                     .padding()
                 }
             }
-            // Define destination for Chat
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .chat(let chat):
-                    ChatDetailView(chat: chat)
+                    ChatDetailView(chat: chat, allUsers: viewModel.allUsersDict)
                 case .profile:
                     ProfileView()
                 }
-                
             }
-        }
-    }
-}
-
-
-struct ChatRow: View {
-    let chat: Chat
-    let formattedDate: String
-    
-    var body: some View {
-        HStack {
-            Circle()
-                .fill(Color.blue)
-                .frame(width: 40, height: 40)
-                .overlay(alignment: .center) {
-                    Text(chat.name.prefix(1))
-                        .foregroundColor(.white)
+            .onAppear {
+                Task {
+                    await viewModel.loadAllUsers()
+                    if Auth.auth().currentUser != nil {
+                        viewModel.listenToChats()
+                    } else {
+                        // Optionally, observe Auth state and start listening when user logs in
+                        Auth.auth().addStateDidChangeListener { _, user in
+                            if user != nil {
+                                viewModel.listenToChats()
+                            }
+                        }
+                    }
                 }
-            
-            VStack(alignment: .leading) {
-                Text(chat.name).font(.headline)
-                Text(chat.lastMessage)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
             }
-            
-            Spacer()
-            Text(formattedDate)
-                .font(.caption)
-                .foregroundColor(.gray)
         }
     }
 }
@@ -112,14 +132,79 @@ struct ChatList: View {
     let chats: [Chat]
     let formatDate: (Date) -> String
     @Binding var path: [Route]
+    @State private var showDeleteConfirm = false
+    @State private var chatToDelete: Chat? = nil
+    @EnvironmentObject var homeVM: HomeViewModel
     
     var body: some View {
         List(chats) { chat in
             NavigationLink(value: Route.chat(chat)) {
-                ChatRow(chat: chat, formattedDate: formatDate(chat.timestamp))
+                ChatRow(chat: chat,
+                        formattedDate: chat.lastMessage.map { formatDate($0.timestamp) } ?? "")
+            }
+            .contextMenu {
+                Button(role: .destructive) {
+                    chatToDelete = chat
+                    showDeleteConfirm = true
+                } label: {
+                    Label("Delete Chat", systemImage: "trash")
+                }
             }
         }
         .listStyle(.plain)
+        .confirmationDialog("Delete this chat?",
+                            isPresented: $showDeleteConfirm,
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let chat = chatToDelete {
+                    Task {
+                        await homeVM.deleteChat(chat, deleteFromBackend: true)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+    }
+}
+
+
+struct ChatRow: View {
+    let chat: Chat
+    let formattedDate: String
+    @EnvironmentObject var homeVM: HomeViewModel
+    
+    var body: some View {
+        HStack {
+            if let avatarURL = homeVM.chatDisplayAvatar(chat),
+               let url = URL(string: avatarURL) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Circle().fill(Color.gray.opacity(0.3))
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 40, height: 40)
+                    .overlay(Text(homeVM.chatDisplayName(chat).prefix(1))
+                        .foregroundColor(.white))
+            }
+            
+            VStack(alignment: .leading) {
+                Text(homeVM.chatDisplayName(chat))
+                Text(chat.lastMessage?.text ?? "Say hello 👋")
+                    .font(.subheadline)
+                    .foregroundStyle(.gray)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            Text(formattedDate)
+                .font(.caption)
+                .foregroundStyle(.gray)
+        }
     }
 }
 
