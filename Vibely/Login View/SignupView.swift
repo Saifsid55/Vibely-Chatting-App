@@ -42,7 +42,7 @@ struct SignupView: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.title3)
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .padding(.leading, 8)
                         }
                         
@@ -50,21 +50,22 @@ struct SignupView: View {
                         
                         Text("SIGN UP")
                             .font(.caption)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding(.trailing, 8)
                     }
-                    .padding(.top, 16)
+                    .padding(.top, 24)
                     Spacer()
                     
                     // App Title
                     Text("FIND")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+//                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.custom("PermanentMarker-Regular", size: 48))
+                        .foregroundStyle(.white)
                         .shadow(radius: 5)
                     
                     Text("Create your own itinerary!")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundStyle(.white.opacity(0.9))
                         .padding(.bottom, 40)
                     
                     // ✅ MVVM Signup Card
@@ -77,7 +78,7 @@ struct SignupView: View {
                     if let error = authVM.errorMessage {
                         Text(error)
                             .font(.caption)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding()
                             .background(Color.red.opacity(0.7))
                             .cornerRadius(10)
@@ -132,13 +133,13 @@ struct SignupCardView: View {
             // Email Field
             HStack {
                 Image(systemName: "envelope.fill")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 TextField("", text: $authVM.email)
                     .placeholder(when: authVM.email.isEmpty) {
                         Text("Enter Email")
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundStyle(.white.opacity(0.7))
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .autocapitalization(.none)
                     .keyboardType(.emailAddress)
             }
@@ -148,7 +149,7 @@ struct SignupCardView: View {
             // Password Field
             HStack {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 
                 if showPassword {
                     TextField("", text: $authVM.password)
@@ -156,21 +157,21 @@ struct SignupCardView: View {
                             Text("Password")
                                 .foregroundColor(.white.opacity(0.7))
                         }
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 } else {
                     SecureField("", text: $authVM.password)
                         .placeholder(when: authVM.password.isEmpty) {
                             Text("Password")
-                                .foregroundColor(.white.opacity(0.7))
+                                .foregroundStyle(.white.opacity(0.7))
                         }
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 }
                 
                 Button {
                     showPassword.toggle()
                 } label: {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
             }
             .padding()
@@ -179,29 +180,29 @@ struct SignupCardView: View {
             // Confirm Password Field
             HStack {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                 
                 if showConfirmPassword {
                     TextField("", text: $authVM.confirmPassword)
                         .placeholder(when: authVM.confirmPassword.isEmpty) {
                             Text("Confirm Password")
-                                .foregroundColor(.white.opacity(0.7))
+                                .foregroundStyle(.white.opacity(0.7))
                         }
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 } else {
                     SecureField("", text: $authVM.confirmPassword)
                         .placeholder(when: authVM.confirmPassword.isEmpty) {
                             Text("Confirm Password")
-                                .foregroundColor(.white.opacity(0.7))
+                                .foregroundStyle(.white.opacity(0.7))
                         }
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 }
                 
                 Button {
                     showConfirmPassword.toggle()
                 } label: {
                     Image(systemName: showConfirmPassword ? "eye.slash.fill" : "eye.fill")
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
             }
             .padding()
@@ -211,10 +212,10 @@ struct SignupCardView: View {
             if !authVM.password.isEmpty && !authVM.confirmPassword.isEmpty {
                 HStack {
                     Image(systemName: authVM.password == authVM.confirmPassword ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundColor(authVM.password == authVM.confirmPassword ? .green : .red)
+                        .foregroundStyle(authVM.password == authVM.confirmPassword ? .green : .red)
                     Text(authVM.password == authVM.confirmPassword ? "Passwords match" : "Passwords do not match")
                         .font(.caption)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundStyle(.white.opacity(0.9))
                     Spacer()
                 }
                 .padding(.horizontal, 4)
@@ -237,7 +238,7 @@ struct SignupCardView: View {
             } label: {
                 Text("Create Account")
                     .font(.headline)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.white)
@@ -252,7 +253,7 @@ struct SignupCardView: View {
                 Rectangle().fill(Color.white.opacity(0.5)).frame(height: 1)
                 Text("Or sign up with")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundStyle(.white.opacity(0.7))
                 Rectangle().fill(Color.white.opacity(0.5)).frame(height: 1)
             }
             .padding(.vertical, 8)

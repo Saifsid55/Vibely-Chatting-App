@@ -37,8 +37,9 @@ struct WelcomeView: View {
                 
                 // App Logo/Title
                 Text("FIND")
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+//                    .font(.system(size: 72, weight: .bold, design: .rounded))
+                    .font(.custom("PermanentMarker-Regular", size: 72))
+                    .foregroundStyle(.white)
                     .shadow(radius: 10)
                 
                 Spacer()
@@ -49,11 +50,11 @@ struct WelcomeView: View {
                         Text("Dont wait.")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                         
                         Text("Get best experience now")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundStyle(.white.opacity(0.8))
                     }
                     .padding(.bottom, 24)
                     
@@ -63,7 +64,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("Log in")
                             .font(.headline)
-                            .foregroundColor(.black)
+                            .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.white)
@@ -76,7 +77,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("Don't have an Account? Sign Up")
                             .font(.subheadline)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .overlay(

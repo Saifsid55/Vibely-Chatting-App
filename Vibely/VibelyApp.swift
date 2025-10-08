@@ -42,10 +42,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let backButtonAppearance = UIBarButtonItemAppearance()
         backButtonAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.clear]
         backButtonAppearance.highlighted.titleTextAttributes = [.foregroundColor: UIColor.clear]
-        
         appearance.backButtonAppearance = backButtonAppearance
         
         // Apply to all navigation bars
+//        UINavigationBar.appearance().tintColor = UIColor(hex: "#243949")
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance

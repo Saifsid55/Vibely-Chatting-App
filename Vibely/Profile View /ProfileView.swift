@@ -28,7 +28,7 @@ struct ProfileView: View {
                     .overlay(
                         Text(vm.username.prefix(1).uppercased())
                             .font(.largeTitle)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     )
                 
                 // Username
@@ -40,7 +40,7 @@ struct ProfileView: View {
                 if let email = Auth.auth().currentUser?.email {
                     Text(email)
                         .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 }
             }
             .padding(.bottom, 40)
@@ -55,7 +55,7 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.red)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .cornerRadius(8)
                     .padding(.horizontal)
             }
@@ -72,7 +72,7 @@ struct ProfileView: View {
                     }
                 }
             }
-            .foregroundColor(.red)
+            .foregroundStyle(.red)
             .padding(.top, 10)
             
             Spacer()

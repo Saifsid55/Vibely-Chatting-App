@@ -39,7 +39,7 @@ struct ChatDetailView: View {
                     viewModel.sendMessage()
                 }) {
                     Image(systemName: "paperplane.fill")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                         .padding(8)
                         .background(Color(.systemGray5))
                         .clipShape(Circle())
@@ -52,6 +52,7 @@ struct ChatDetailView: View {
         .navigationTitle("") // hide default title
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(false) // ✅ Hide system back button
+        .tint(Color(hex: "#243949"))
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 ChatToolbarView(
@@ -100,8 +101,14 @@ struct MessageBubble: View {
             case .text:
                 Text(message.text ?? "")
                     .padding(12)
-                    .background(message.isMe ? Color.blue : Color.gray.opacity(0.3))
-                    .foregroundColor(message.isMe ? .white : .black)
+                    .background(
+                        message.isMe
+                        ? AnyShapeStyle(
+                            LinearGradient(hexColors: ["#243949"], direction: .leftToRight)
+                        )
+                        : AnyShapeStyle(Color.gray.opacity(0.3))
+                    )
+                    .foregroundStyle(message.isMe ? .white : .black)
                     .cornerRadius(16, corners: message.isMe ? [.topLeft, .topRight, .bottomLeft] : [.topLeft, .topRight, .bottomRight])
             case .image:
                 Image(systemName: "photo")
@@ -117,7 +124,7 @@ struct MessageBubble: View {
                         .scaledToFit()
                         .frame(height: 30)
                     Text("Audio")
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .font(.caption)
                 }
                 .padding(12)
@@ -174,16 +181,16 @@ struct ChatToolbarView: View {
                         .scaledToFill()
                 } placeholder: {
                     Circle()
-                        .fill(Color.blue)
-                        .overlay(Text(chatInitial).foregroundColor(.white))
+                        .fill(LinearGradient(hexColors: ["#243949", "#517fa4"], direction: .leftToRight))
+                        .overlay(Text(chatInitial).foregroundStyle(.white))
                 }
                 .frame(width: 40, height: 40)
                 .clipShape(Circle())
             } else {
                 Circle()
-                    .fill(Color.blue)
+                    .fill(LinearGradient(hexColors: ["#243949", ""], direction: .leftToRight))
                     .frame(width: 40, height: 40)
-                    .overlay(Text(chatInitial).foregroundColor(.white))
+                    .overlay(Text(chatInitial).foregroundStyle(.white))
             }
             
             // Name and status
@@ -194,7 +201,7 @@ struct ChatToolbarView: View {
                 
                 Text("Online")
                     .font(.subheadline)
-                    .foregroundColor(.green)
+                    .foregroundStyle(.green)
             }
         }
     }

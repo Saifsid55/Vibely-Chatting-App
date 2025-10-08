@@ -17,9 +17,11 @@ struct HomeView: View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(stops: [
-                        .init(color: .white, location: 0.0),
-                        .init(color: .white, location: 0.8),
-                        .init(color: Color.blue.opacity(0.4), location: 1.0)
+                        .init(hex: "#FFFFFF", location: 0.0),
+                        .init(hex: "#FFFFFF", location: 0.7),
+                        .init(hex: "#517fa4", location: 1.0),
+                        //                            .init(hex: "#243949", location: 1.0)
+                        
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -57,10 +59,10 @@ struct HomeView: View {
                                     Circle()
                                         .fill(Color.blue)
                                         .frame(width: 40, height: 40)
-                                        .overlay(Text(user.username.prefix(1)).foregroundColor(.white))
+                                        .overlay(Text(user.username.prefix(1)).foregroundStyle(.white))
                                     VStack(alignment: .leading) {
                                         Text(user.username).font(.headline)
-                                        Text(user.phoneNumber ?? "").font(.subheadline).foregroundColor(.gray)
+                                        Text(user.phoneNumber ?? "").font(.subheadline).foregroundStyle(.gray)
                                     }
                                 }
                             }
@@ -75,15 +77,29 @@ struct HomeView: View {
                     .environmentObject(viewModel)
                 }
                 
-                .navigationTitle("Chats")
-                .navigationBarTitleDisplayMode(.inline)  // ✅ Add this line
+                //                .navigationTitle("Chats")
+                .navigationBarTitleDisplayMode(.inline)
+                .tint(Color(hex: "#243949"))
+
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             path.append(.profile)
                         } label: {
                             Image(systemName: "gearshape")
+                                .foregroundStyle(
+                                    LinearGradient(hexColors: ["#243949", "#517fa4"],
+                                                   direction: .leftToRight))
                         }
+                    }
+                    ToolbarItem(placement: .topBarLeading) {
+                        Text("FIND")
+                            .font(.custom("PermanentMarker-Regular", size: 20))
+                            .foregroundStyle(
+                                LinearGradient(hexColors: ["#243949", "#517fa4"],
+                                               direction: .leftToRight)
+                            )
+                            .shadow(radius: 34)
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
@@ -93,7 +109,10 @@ struct HomeView: View {
                         Image(systemName: "plus")
                             .font(.system(size: 24))
                             .padding()
-                            .background(Color.blue)
+                            .background(
+                                LinearGradient(hexColors: ["#243949", "#517fa4"],
+                                               direction: .topToBottom)
+                            )
                             .foregroundStyle(.white)
                             .clipShape(Circle())
                             .shadow(radius: 4)
@@ -124,6 +143,7 @@ struct HomeView: View {
                     }
                 }
             }
+            .tint(Color(hex: "#243949"))
         }
     }
 }
@@ -186,10 +206,11 @@ struct ChatRow: View {
                 .clipShape(Circle())
             } else {
                 Circle()
-                    .fill(Color.blue)
+                    .fill(LinearGradient(hexColors: ["#243949", "#517fa4"],
+                                         direction: .leftToRight))
                     .frame(width: 40, height: 40)
                     .overlay(Text(homeVM.chatDisplayName(chat).prefix(1))
-                        .foregroundColor(.white))
+                        .foregroundStyle(.white))
             }
             
             VStack(alignment: .leading) {

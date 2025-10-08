@@ -163,7 +163,21 @@ final class HomeViewModel: ObservableObject {
     // MARK: - Format date
     func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.timeStyle = .short
+        let now = Date()
+        
+        // Calculate time difference in hours
+        let hoursPassed = now.timeIntervalSince(date) / 3600
+        
+        if hoursPassed < 24 {
+            // Within 24 hours → show only time
+            formatter.timeStyle = .short
+            formatter.dateStyle = .none
+        } else {
+            // More than 24 hours → show date + time
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+        }
+        
         return formatter.string(from: date)
     }
     

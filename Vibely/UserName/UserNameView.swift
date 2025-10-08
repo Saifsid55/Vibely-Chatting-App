@@ -35,7 +35,7 @@ struct UsernameView: View {
             }
             
             if let error = vm.errorMessage {
-                Text(error).foregroundColor(.red)
+                Text(error).foregroundStyle(.red)
             }
         }
         .padding()

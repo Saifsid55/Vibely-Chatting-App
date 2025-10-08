@@ -55,12 +55,13 @@ struct LoginView: View {
                             .padding(.trailing, 8)
                         //                            .padding(.top, 16)
                     }
-                    .padding(.top, 16)
+                    .padding(.top, 24)
                     Spacer()
                     
                     // App Title
                     Text("FIND")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+//                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.custom("PermanentMarker-Regular", size: 48))
                         .foregroundStyle(.white)
                         .shadow(radius: 5)
                     
