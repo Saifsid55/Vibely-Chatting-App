@@ -21,10 +21,14 @@ class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var showUsernameScreen = false
     @Published var errorMessage: String?
+    @Published var confirmPassword = ""
     
     @Published var verificationID: String?
     private let db = Firestore.firestore()
     
+    var isPasswordMatching: Bool {
+        !password.isEmpty && password == confirmPassword
+    }
     
     init() {
         checkCurrentUser()
@@ -43,6 +47,11 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Email Auth
     func signupWithEmail() async throws {
+        guard isPasswordMatching else {
+            errorMessage = "Passwords do not match"
+            return
+        }
+        
         do {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             self.checkUserExistsOrNavigate(uid: result.user.uid, email: email, phone: nil)
@@ -193,6 +202,17 @@ class AuthViewModel: ObservableObject {
         
         // 3️⃣ Delete Firebase Auth account
         try await Auth.auth().currentUser?.delete()
+    }
+    
+    func resetFields() {
+        email = ""
+        password = ""
+        username = ""
+        otpCode = ""
+        phoneNumber = ""
+        errorMessage = nil
+        // If you added confirmPassword in Signup, reset it too
+        confirmPassword = ""
     }
     
 }
