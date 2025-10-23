@@ -73,9 +73,23 @@ class ChatViewModel: ObservableObject {
                     return
                 }
                 
-                self.messages = snapshot?.documents.compactMap { doc in
-                    try? doc.data(as: Message.self)
+                let fetchedMessages: [Message] = snapshot?.documents.compactMap { doc in
+                    
+                    guard let message = try? doc.data(as: Message.self) else { return nil }
+                    if !message.isMe && message.status == .delivered {
+                        self.markMessagesAsSeen()
+                    }
+                    else if !message.isMe && message.status == .sent {
+                        self.markMessageAsDelivered(message)
+                    }
+                    return message
                 } ?? []
+                
+                if self.messages != fetchedMessages {
+                    self.messages = fetchedMessages
+                    // ✅ Mark seen only after new messages are fetched
+//                    self.markMessagesAsSeen()
+                }
             }
     }
     
@@ -123,7 +137,8 @@ class ChatViewModel: ObservableObject {
                 "senderId": uid,
                 "text": text,
                 "timestamp": now,
-                "type": "text"
+                "type": "text",
+                "status": MessageStatus.sent.rawValue
             ]
             
             do {
@@ -155,182 +170,27 @@ class ChatViewModel: ObservableObject {
             }
         }
     }
-}
-
-
-
-
-
-
-
-/*
-import SwiftUI
-import Combine
-import FirebaseAuth
-import FirebaseFirestore
-
-@MainActor
-class ChatViewModel: ObservableObject {
-    @Published var messages: [Message] = []
-    @Published var newMessage: String = ""
-    @Published var isLoading = false
-    @Published var errorMessage: String?
     
-    @Published var chat: Chat
-    private let db = Firestore.firestore()
-    private var listener: ListenerRegistration?
-    
-    init(chat: Chat) {
-        self.chat = chat
-        if chat.id != nil && !chat.id!.isEmpty {
-            startListening()
-        } else {
-            print("⚠️ Chat doesn't exist in Firestore yet. Will create on first message.")
-        }
-    }
-    
-    deinit {
-        listener?.remove()
-    }
-    
-    // MARK: - Chat Info for View
-    var chatName: String { chat.name }
-    var chatInitial: String { String(chat.name.prefix(1)) }
-    
-    // MARK: - Real-time listener
-    private func startListening() {
-        guard let chatId = chat.id, !chatId.isEmpty else {
-            print("⚠️ Cannot start listening: chat.id is nil or empty")
-            return
-        }
+    private func markMessageAsDelivered(_ message: Message) {
+        guard !message.isMe, let chatId = chat.id, let messageId = message.id else { return }
         
-        isLoading = true
-        
-        listener = db.collection("chats")
+        let messageRef = db.collection("chats")
             .document(chatId)
             .collection("messages")
-            .order(by: "timestamp", descending: false)
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                Task { @MainActor in
-                    self.isLoading = false
-                    
-                    if let error = error {
-                        self.errorMessage = error.localizedDescription
-                        print("❌ Listener error: \(error.localizedDescription)")
-                        return
-                    }
-                    
-                    self.messages = snapshot?.documents.compactMap { doc in
-                        try? doc.data(as: Message.self)
-                    } ?? []
-                }
-            }
+            .document(messageId)
+        
+        messageRef.updateData(["status": MessageStatus.delivered.rawValue])
     }
     
-    // MARK: - Send message
-    func sendMessage() {
-        guard !newMessage.isEmpty,
-              let uid = Auth.auth().currentUser?.uid else {
-            print("⚠️ Cannot send message: empty message or no user")
-            return
-        }
+    func markMessagesAsSeen() {
+        guard let chatId = chat.id else { return }
         
-        let text = newMessage
-        newMessage = ""  // ✅ Clear immediately for better UX
-        
-        let messageId = UUID().uuidString
-        let now = Timestamp(date: Date())
-        
-        let messageData: [String: Any] = [
-            "senderId": uid,
-            "text": text,
-            "timestamp": now,
-            "type": "text"
-        ]
-        
-        // ✅ Check if this is a new chat (no ID yet)
-        if chat.id == nil || chat.id!.isEmpty {
-            Task {
-                await createChatAndSendFirstMessage(messageData: messageData, text: text, now: now, uid: uid, messageId: messageId)
-            }
-        } else {
-            // ✅ Chat exists, just send the message
-            Task {
-                await sendMessageToExistingChat(chatId: chat.id!, messageData: messageData, text: text, now: now, uid: uid, messageId: messageId)
-            }
-        }
-    }
-    
-    // ✅ Helper: Create new chat document and send first message
-    private func createChatAndSendFirstMessage(messageData: [String: Any], text: String, now: Timestamp, uid: String, messageId: String) async {
-        let newChatId = UUID().uuidString
-        let chatRef = db.collection("chats").document(newChatId)
-        
-        print("🆕 Creating new chat: \(newChatId)")
-        
-        // Capture values that need to be accessed
-        let chatName = chat.name
-        let chatParticipants = chat.participants
-        let chatAvatarURL = chat.avatarURL
-        
-        // Create the chat document with all required fields
-        let chatData: [String: Any] = [
-            "name": chatName,
-            "participants": chatParticipants,
-            "avatarURL": chatAvatarURL as Any,
-            "createdAt": now,
-            "updatedAt": now,
-            "lastMessage": [
-                "senderId": uid,
-                "text": text,
-                "timestamp": now
-            ]
-        ]
-        
-        do {
-            // 1️⃣ Create the chat document
-            try await chatRef.setData(chatData)
-            print("✅ Chat document created: \(newChatId)")
-            
-            // 2️⃣ Update local chat object with the new ID
-            self.chat.id = newChatId
-            
-            // 3️⃣ Add the message to the subcollection
-            try await chatRef.collection("messages").document(messageId).setData(messageData)
-            print("✅ First message sent")
-            
-            // 4️⃣ Start listening for future messages
-            self.startListening()
-            
-        } catch {
-            print("❌ Error creating chat or sending message: \(error.localizedDescription)")
-            self.errorMessage = "Failed to create chat"
-        }
-    }
-    
-    // ✅ Helper: Send message to existing chat
-    private func sendMessageToExistingChat(chatId: String, messageData: [String: Any], text: String, now: Timestamp, uid: String, messageId: String) async {
-        let chatRef = db.collection("chats").document(chatId)
-        
-        do {
-            // 1️⃣ Add the message
-            try await chatRef.collection("messages").document(messageId).setData(messageData)
-            
-            // 2️⃣ Update lastMessage and updatedAt
-            try await chatRef.setData([
-                "lastMessage": [
-                    "senderId": uid,
-                    "text": text,
-                    "timestamp": now
-                ],
-                "updatedAt": now
-            ], merge: true)
-            
-        } catch {
-            print("❌ Error sending message: \(error.localizedDescription)")
+        for message in messages where !message.isMe && message.status != .seen {
+            db.collection("chats")
+                .document(chatId)
+                .collection("messages")
+                .document(message.id!)
+                .updateData(["status": MessageStatus.seen.rawValue])
         }
     }
 }
-*/

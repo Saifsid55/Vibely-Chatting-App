@@ -45,7 +45,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         appearance.backButtonAppearance = backButtonAppearance
         
         // Apply to all navigation bars
-//        UINavigationBar.appearance().tintColor = UIColor(hex: "#243949")
+        //        UINavigationBar.appearance().tintColor = UIColor(hex: "#243949")
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
@@ -72,7 +72,9 @@ struct RootView: View {
     
     var body: some View {
         Group {
-            if authVM.isAuthenticated {
+            if authVM.isLoading {
+                SplashView() 
+            } else if authVM.isAuthenticated {
                 HomeView()
             } else if authVM.showUsernameScreen {
                 UsernameView()
@@ -81,5 +83,7 @@ struct RootView: View {
                     .environmentObject(authVM)
             }
         }
+        .animation(.easeInOut, value: authVM.isLoading)
+        .transition(.opacity)
     }
 }

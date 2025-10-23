@@ -22,7 +22,7 @@ class AuthViewModel: ObservableObject {
     @Published var showUsernameScreen = false
     @Published var errorMessage: String?
     @Published var confirmPassword = ""
-    
+    @Published var isLoading = true
     @Published var verificationID: String?
     private let db = Firestore.firestore()
     
@@ -36,12 +36,14 @@ class AuthViewModel: ObservableObject {
     
     func checkCurrentUser() {
         if let user = Auth.auth().currentUser {
-            // Load Firestore user
-            
             Task {
                 try await loadUser(uid: user.uid)
             }
+        } else {
+            // 👇 Add this to end splash for non-logged-in users
+            self.isLoading = false
         }
+        
     }
     
     
@@ -77,7 +79,7 @@ class AuthViewModel: ObservableObject {
             throw NSError(domain: "AuthError", code: 0,
                           userInfo: [NSLocalizedDescriptionKey: "Phone number cannot be empty"])
         }
-
+        
         return try await withCheckedThrowingContinuation { [weak self] continuation in
             PhoneAuthProvider.provider().verifyPhoneNumber(formattedPhone, uiDelegate: nil) { verificationID, error in
                 if let error = error {
@@ -96,7 +98,7 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
-
+    
     func verifyOTP(_ code: String) async throws {
         guard let verificationID = verificationID else { return }
         let credential = PhoneAuthProvider.provider().credential(
@@ -131,6 +133,7 @@ class AuthViewModel: ObservableObject {
             currentUser = user
             isAuthenticated = true
             showUsernameScreen = false
+            isLoading = false
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -139,13 +142,27 @@ class AuthViewModel: ObservableObject {
     // MARK: - Helpers
     private func checkUserExistsOrNavigate(uid: String, email: String?, phone: String?) {
         Task {
-            let doc = try? await db.collection("users").document(uid).getDocument()
-            if let doc = doc, doc.exists {
-                currentUser = try? doc.data(as: AppUserModel.self)
-                isAuthenticated = true
-            } else {
-                // New user -> go to username screen
-                showUsernameScreen = true
+            do {
+                let doc = try await db.collection("users").document(uid).getDocument()
+                if doc.exists {
+                    if let user = try? doc.data(as: AppUserModel.self) {
+                        await MainActor.run {
+                            self.currentUser = user
+                            self.isAuthenticated = true
+                            self.isLoading = false
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.showUsernameScreen = true
+                        self.isLoading = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                }
             }
         }
     }
@@ -155,6 +172,7 @@ class AuthViewModel: ObservableObject {
         if let user = try? doc.data(as: AppUserModel.self) {
             currentUser = user
             isAuthenticated = true
+            self.isLoading = false
         }
     }
     

@@ -30,8 +30,8 @@ struct HomeView: View {
                 
                 VStack {
                     TextField("Search users...", text: $viewModel.searchText)
-                        .padding(8)
                         .background(Color(.systemGray6))
+                        .padding(8)
                         .clipShape(Capsule())
                         .padding(.horizontal)
                         .onChange(of: viewModel.searchText) { oldValue, newValue in

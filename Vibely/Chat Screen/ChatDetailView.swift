@@ -11,22 +11,39 @@ struct ChatDetailView: View {
     @Environment(\.dismiss) private var dismiss
     
     init(chat: Chat, allUsers: [String: AppUserModel]) {
-          _viewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, allUsers: allUsers))
-      }
+        _viewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, allUsers: allUsers))
+    }
     
     var body: some View {
         VStack(spacing: 0) {
             // Messages ScrollView
             ScrollViewReader { scrollProxy in
                 ScrollView {
-                    VStack(spacing: 10) {
+                    LazyVStack(spacing: 10) {
                         ForEach(viewModel.messages) { message in
                             MessageBubble(message: message)
+                                .id(message.id)
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 8)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
                 }
-                .frame(minWidth: 1.0, maxWidth: .infinity, minHeight: 1.0, maxHeight: .infinity)
+                .onChange(of: viewModel.messages.count) { oldValue, newValue in
+                    if let lastId = viewModel.messages.last?.id {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            scrollProxy.scrollTo(lastId, anchor: .bottom)
+                        }
+                    }
+                }
+                .onAppear {
+                    // Initial scroll when view appears
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        if let lastId = viewModel.messages.last?.id {
+                            scrollProxy.scrollTo(lastId, anchor: .bottom)
+                        }
+                    }
+                }
             }
             
             // Input Bar
@@ -44,6 +61,7 @@ struct ChatDetailView: View {
                         .background(Color(.systemGray5))
                         .clipShape(Circle())
                 }
+                .disabled(viewModel.newMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
@@ -63,16 +81,6 @@ struct ChatDetailView: View {
                 )
             }
         }
-        //        .gesture(
-        //            // Add drag gesture to handle swipe back manually
-        //            DragGesture()
-        //                .onEnded { value in
-        //                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
-        //                        dismiss()
-        //                    }
-        //                }
-        //        )
-        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
@@ -81,18 +89,24 @@ struct MessageBubble: View {
     let message: Message
     
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             if !message.isMe {
                 // Receiver messages on the left
                 bubbleContent
-                Spacer(minLength: 50) // Pushes bubble to left
+                    .padding(.leading)
+                Spacer()
             } else {
                 // Sender messages on the right
-                Spacer(minLength: 50)
-                bubbleContent
+                Spacer()
+                HStack(alignment: .center, spacing: 8) {
+                    Text(message.status?.rawValue.capitalized ?? "Sent")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                    bubbleContent
+                }
+                .padding(.trailing)
             }
         }
-        .padding(.horizontal)
     }
     
     private var bubbleContent: some View {
@@ -132,7 +146,7 @@ struct MessageBubble: View {
                 .cornerRadius(16)
             }
         }
-        .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
+        //        .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
     }
 }
 
@@ -167,12 +181,12 @@ struct ChatToolbarView: View {
     var body: some View {
         HStack(spacing: 8) {
             // Back Button
-//            Button(action: {
-//                onDismiss()
-//            }) {
-//                Image(systemName: "chevron.left")
-//                    .foregroundColor(.blue)
-//            }
+            //            Button(action: {
+            //                onDismiss()
+            //            }) {
+            //                Image(systemName: "chevron.left")
+            //                    .foregroundColor(.blue)
+            //            }
             
             // Avatar
             if let url = avatarURL, !url.isEmpty, let avatarURL = URL(string: url) {
