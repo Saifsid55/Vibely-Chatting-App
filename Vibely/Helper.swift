@@ -93,3 +93,13 @@ extension Gradient.Stop {
         self.init(color: Color(hex: hex) ?? .clear, location: location)
     }
 }
+
+
+extension View {
+    func hapticFeedback(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) -> some View {
+        self.onTapGesture {
+            let generator = UIImpactFeedbackGenerator(style: style)
+            generator.impactOccurred()
+        }
+    }
+}

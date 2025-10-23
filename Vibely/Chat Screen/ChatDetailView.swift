@@ -27,7 +27,10 @@ struct ChatDetailView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.top, 8)
-                    .padding(.bottom, 16)
+//                    .padding(.bottom, 16)
+                }
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 16)
                 }
                 .onChange(of: viewModel.messages.count) { oldValue, newValue in
                     if let lastId = viewModel.messages.last?.id {
