@@ -16,6 +16,7 @@ class ChatViewModel: ObservableObject {
     @Published var newMessage: String = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var animatedMessageIDs: Set<String> = []
     
     private let allUsers: [String: AppUserModel]
     var chat: Chat

@@ -21,13 +21,13 @@ struct ChatDetailView: View {
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         ForEach(viewModel.messages) { message in
-                            MessageBubble(message: message)
+                            MessageBubble(message: message, viewModel: viewModel)
                                 .id(message.id)
                         }
                     }
                     .padding(.horizontal, 8)
                     .padding(.top, 8)
-//                    .padding(.bottom, 16)
+                    //                    .padding(.bottom, 16)
                 }
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: 16)
@@ -90,7 +90,7 @@ struct ChatDetailView: View {
 
 struct MessageBubble: View {
     let message: Message
-    
+    @ObservedObject var viewModel: ChatViewModel
     var body: some View {
         HStack(spacing: 0) {
             if !message.isMe {
@@ -102,9 +102,19 @@ struct MessageBubble: View {
                 // Sender messages on the right
                 Spacer()
                 HStack(alignment: .center, spacing: 8) {
-                    Text(message.status?.rawValue.capitalized ?? "Sent")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                    //                    Text(message.status?.rawValue.capitalized ?? "Sent")
+                    //                        .font(.caption2)
+                    //                        .foregroundColor(.gray)
+                    if let status = message.status, let id = message.id {
+                        TickStatusView(
+                            status: status,
+                            shouldAnimate: !viewModel.animatedMessageIDs.contains(id)
+                        )
+                        .onAppear {
+                            // Mark it animated so it doesn’t repeat
+                            viewModel.animatedMessageIDs.insert(id)
+                        }
+                    }
                     bubbleContent
                 }
                 .padding(.trailing)
