@@ -15,7 +15,7 @@ struct ChatDetailView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
             // Messages ScrollView
             ScrollViewReader { scrollProxy in
                 ScrollView {
@@ -27,10 +27,10 @@ struct ChatDetailView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.top, 8)
-                    //                    .padding(.bottom, 16)
+                    .padding(.bottom, 8)
                 }
                 .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 16)
+                    Color.clear.frame(height: 64)
                 }
                 .onChange(of: viewModel.messages.count) { oldValue, newValue in
                     if let lastId = viewModel.messages.last?.id {
@@ -48,31 +48,18 @@ struct ChatDetailView: View {
                     }
                 }
             }
-            
-            // Input Bar
-            HStack(spacing: 8) {
-                TextField("Type a message...", text: $viewModel.newMessage)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.vertical, 8)
-                
-                Button(action: {
-                    viewModel.sendMessage()
-                }) {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundStyle(.blue)
-                        .padding(8)
-                        .background(Color(.systemGray5))
-                        .clipShape(Circle())
-                }
-                .disabled(viewModel.newMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            VStack {
+                Spacer()
+                MessageInputView(viewModel: viewModel)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
-            .background(Color(.systemGray6))
+            
         }
         .navigationTitle("") // hide default title
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(false) // ✅ Hide system back button
+        .background(Color.clear)
         .tint(Color(hex: "#243949"))
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -102,18 +89,11 @@ struct MessageBubble: View {
                 // Sender messages on the right
                 Spacer()
                 HStack(alignment: .center, spacing: 8) {
-                    //                    Text(message.status?.rawValue.capitalized ?? "Sent")
-                    //                        .font(.caption2)
-                    //                        .foregroundColor(.gray)
                     if let status = message.status, let id = message.id {
                         TickStatusView(
                             status: status,
                             shouldAnimate: viewModel.animatedMessageIDs.contains(id)
                         )
-//                        .onAppear {
-//                            // Mark it animated so it doesn’t repeat
-//                            viewModel.animatedMessageIDs.insert(id)
-//                        }
                     }
                     bubbleContent
                 }
@@ -159,7 +139,6 @@ struct MessageBubble: View {
                 .cornerRadius(16)
             }
         }
-        //        .frame(maxWidth: 250, alignment: message.isMe ? .trailing : .leading)
     }
 }
 
@@ -193,14 +172,6 @@ struct ChatToolbarView: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            // Back Button
-            //            Button(action: {
-            //                onDismiss()
-            //            }) {
-            //                Image(systemName: "chevron.left")
-            //                    .foregroundColor(.blue)
-            //            }
-            
             // Avatar
             if let url = avatarURL, !url.isEmpty, let avatarURL = URL(string: url) {
                 AsyncImage(url: avatarURL) { image in
@@ -234,4 +205,59 @@ struct ChatToolbarView: View {
     }
 }
 
-
+// MARK: - Message Input View
+struct MessageInputView: View {
+    @ObservedObject var viewModel: ChatViewModel
+    @StateObject private var motion = MotionManager()
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Text Field with Liquid Glass Effect
+            TextField("Type a message...", text: $viewModel.newMessage)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+                .frame(height: 48)
+                .foregroundStyle(.white.opacity(0.9))
+                .tint(.white)
+                .font(.system(size: 16, weight: .regular))
+                .background {
+                    ThickLiquidGlassBackground(motion: motion)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 29))
+            
+            // Send Button
+            Button(action: { viewModel.sendMessage() }) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background {
+                        ZStack {
+                            // Blurred background fill
+                            Circle()
+                                .fill(Color.gray.opacity(0.35))
+                                .blur(radius: 10)
+                            
+                            // Sharp overlay on top
+                            Circle()
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.gray.opacity(0.6),
+                                            Color.gray.opacity(0.3)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 2
+                                )
+                        }
+                            .shadow(color: .white.opacity(0.4), radius: 20, y: 5)
+                    }
+            }
+            .disabled(viewModel.newMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 8)
+    }
+}
