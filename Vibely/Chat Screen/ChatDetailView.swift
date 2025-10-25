@@ -108,12 +108,12 @@ struct MessageBubble: View {
                     if let status = message.status, let id = message.id {
                         TickStatusView(
                             status: status,
-                            shouldAnimate: !viewModel.animatedMessageIDs.contains(id)
+                            shouldAnimate: viewModel.animatedMessageIDs.contains(id)
                         )
-                        .onAppear {
-                            // Mark it animated so it doesn’t repeat
-                            viewModel.animatedMessageIDs.insert(id)
-                        }
+//                        .onAppear {
+//                            // Mark it animated so it doesn’t repeat
+//                            viewModel.animatedMessageIDs.insert(id)
+//                        }
                     }
                     bubbleContent
                 }

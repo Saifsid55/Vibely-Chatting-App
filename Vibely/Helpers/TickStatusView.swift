@@ -15,32 +15,35 @@ struct TickStatusView: View {
     
     var body: some View {
         ZStack {
-            // MARK: - Incomplete Circle
-            Circle()
-                .trim(from: 0.20, to: animateTrim ? 1.10 : 0.08) // ⭕ leaves a small gap
-                .stroke(style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .foregroundColor(statusColor)
-                .rotationEffect(.degrees(-90)) // start animation from top
-                .frame(width: 16, height: 16)
-                .onAppear {
-                    if shouldAnimate {
-                        withAnimation(.easeOut(duration: 0.8)) {
-                            animateTrim = true
-                        }
-                    } else {
-                        animateTrim = true
-                    }
-                }
+            // MARK: - Circle (show only for delivered/seen)
+            if status != .sent {
+                Circle()
+                    .trim(from: 0.20, to: animateTrim ? 1.10 : 0.08)
+                    .stroke(style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    .foregroundColor(statusColor)
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 16, height: 16)
+            }
             
-            // MARK: - Tick mark
+            // MARK: - Tick mark (always visible)
             CheckmarkShape()
                 .trim(from: 0, to: animateTrim ? 1 : 0)
-                .stroke(statusColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .stroke(statusColor, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
                 .frame(width: 12, height: 12)
-                .offset(x: 1.0, y: -1.5) // ✅ moves slightly outside circle
+                .offset(x: 1.0, y: -1.5)
                 .animation(.easeOut(duration: 0.5).delay(0.3), value: animateTrim)
         }
         .frame(width: 20, height: 20)
+        .onAppear {
+            // ✅ Always trigger animation or instant state
+            if shouldAnimate {
+                withAnimation(.easeOut(duration: 0.8)) {
+                    animateTrim = true
+                }
+            } else {
+                animateTrim = true
+            }
+        }
     }
     
     private var statusColor: Color {

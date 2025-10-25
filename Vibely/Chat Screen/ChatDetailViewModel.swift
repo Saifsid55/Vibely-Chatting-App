@@ -17,6 +17,7 @@ class ChatViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var animatedMessageIDs: Set<String> = []
+    private var lastKnownStatuses: [String: MessageStatus] = [:]
     
     private let allUsers: [String: AppUserModel]
     var chat: Chat
@@ -61,6 +62,7 @@ class ChatViewModel: ObservableObject {
     // MARK: - Real-time listener (was loadMessages)
     private func startListening(chatId: String) {
         isLoading = true
+        
         listener = db.collection("chats")
             .document(chatId)
             .collection("messages")
@@ -74,25 +76,47 @@ class ChatViewModel: ObservableObject {
                     return
                 }
                 
-                let fetchedMessages: [Message] = snapshot?.documents.compactMap { doc in
-                    
-                    guard let message = try? doc.data(as: Message.self) else { return nil }
-                    if !message.isMe && message.status == .delivered {
-                        self.markMessagesAsSeen()
-                    }
-                    else if !message.isMe && message.status == .sent {
-                        self.markMessageAsDelivered(message)
-                    }
-                    return message
-                } ?? []
+                guard let snapshot = snapshot else { return }
                 
-                if self.messages != fetchedMessages {
-                    self.messages = fetchedMessages
-                    // ✅ Mark seen only after new messages are fetched
-//                    self.markMessagesAsSeen()
+                var fetchedMessages: [Message] = []
+                var newAnimatedIDs: Set<String> = []
+                
+                for change in snapshot.documentChanges {
+                    if let message = try? change.document.data(as: Message.self) {
+                        
+                        fetchedMessages.append(message)
+                        
+                        // ✅ Only animate if this is a modified message
+                        if change.type == .modified, let id = message.id {
+                            newAnimatedIDs.insert(id)
+                        }
+                        
+                        // Optional: auto mark delivered/seen
+                        if !message.isMe && message.status == .delivered {
+                            self.markMessagesAsSeen()
+                        } else if !message.isMe && message.status == .sent {
+                            self.markMessageAsDelivered(message)
+                        }
+                    }
                 }
+                
+                // Merge with existing messages to keep full list
+                let existingMessages = self.messages.filter { msg in
+                    !fetchedMessages.contains(where: { $0.id == msg.id })
+                }
+                self.messages = (existingMessages + fetchedMessages).sorted {
+                    ($0.timestamp) < ($1.timestamp)
+                }
+                
+                // ✅ Only animate messages that changed status
+                self.animatedMessageIDs.formUnion(newAnimatedIDs)
+                
+                print("Animated IDs this update:", newAnimatedIDs)
             }
     }
+
+    
+    
     
     // MARK: - Send message
     func sendMessage() {
@@ -192,6 +216,21 @@ class ChatViewModel: ObservableObject {
                 .collection("messages")
                 .document(message.id!)
                 .updateData(["status": MessageStatus.seen.rawValue])
+        }
+    }
+    
+    
+    private func loadSavedStatuses(for chatId: String) -> [String: MessageStatus] {
+        guard let data = UserDefaults.standard.data(forKey: "statuses_\(chatId)") else { return [:] }
+        if let decoded = try? JSONDecoder().decode([String: MessageStatus].self, from: data) {
+            return decoded
+        }
+        return [:]
+    }
+    
+    private func saveStatuses(_ statuses: [String: MessageStatus], for chatId: String) {
+        if let data = try? JSONEncoder().encode(statuses) {
+            UserDefaults.standard.set(data, forKey: "statuses_\(chatId)")
         }
     }
 }
