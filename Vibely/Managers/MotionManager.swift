@@ -19,16 +19,21 @@ class MotionManager: ObservableObject {
 
     func startUpdates() {
         if motionManager.isDeviceMotionAvailable {
-            motionManager.deviceMotionUpdateInterval = 1.0 / 60.0 // 60 fps
+            motionManager.deviceMotionUpdateInterval = 1.0 / 30.0 // 60 fps
             motionManager.startDeviceMotionUpdates(to: .main) { motion, _ in
                 guard let motion = motion else { return }
                 self.pitch = motion.attitude.pitch
                 self.roll = motion.attitude.roll
+                print("pitch:", self.pitch, "roll:", self.roll)
             }
         }
     }
+    
+    func stopUpdate() {
+        motionManager.stopDeviceMotionUpdates()
+    }
 
     deinit {
-        motionManager.stopDeviceMotionUpdates()
+        stopUpdate()
     }
 }

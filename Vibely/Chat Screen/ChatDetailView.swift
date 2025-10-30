@@ -234,9 +234,8 @@ struct MessageInputView: View {
                     .background {
                         ZStack {
                             // Blurred background fill
-                            Circle()
-                                .fill(Color.gray.opacity(0.35))
-                                .blur(radius: 10)
+                            ThickLiquidGlassBackground(motion: motion)
+                                .clipShape(Circle())
                             
                             // Sharp overlay on top
                             Circle()

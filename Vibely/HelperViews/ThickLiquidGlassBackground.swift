@@ -22,25 +22,25 @@ struct ThickLiquidGlassBackground: View {
             
             // Motion-reactive subtle shine
             LinearGradient(
-                gradient: Gradient(stops: [
-                    .init(color: Color.white.opacity(0.3), location: 0.0),
-                    .init(color: Color.clear, location: 0.5),
-                    .init(color: Color.white.opacity(0.2), location: 1.0)
+                gradient: Gradient(colors: [
+                    Color.white.opacity(0.7),
+                    Color.clear,
+                    Color.white.opacity(0.6)
                 ]),
                 startPoint: UnitPoint(
-                    x: 0.3 + motion.roll * 0.3,
-                    y: 0.2 + motion.pitch * 0.3
+                    x: 0.5 + motion.roll * 8,   // increased multiplier
+                    y: 0.5 + motion.pitch * 8
                 ),
                 endPoint: UnitPoint(
-                    x: 0.7 - motion.roll * 0.3,
-                    y: 0.8 - motion.pitch * 0.3
+                    x: 0.5 - motion.roll * 8,
+                    y: 0.5 - motion.pitch * 8
                 )
             )
             .blur(radius: 25)
             .blendMode(.screen)
             .opacity(0.4)
-            .animation(.easeOut(duration: 0.2), value: motion.roll)
-            .animation(.easeOut(duration: 0.2), value: motion.pitch)
+            .animation(.interpolatingSpring(stiffness: 50, damping: 8), value: motion.pitch + motion.roll)
+            
             
             // Gentle liquid wave (subtle)
             SimpleLiquidWave()
@@ -75,5 +75,9 @@ struct ThickLiquidGlassBackground: View {
         .shadow(color: Color.white.opacity(0.6), radius: 25, y: 0)
         .shadow(color: Color.white.opacity(0.4), radius: 15, y: 8)
         .shadow(color: Color.white.opacity(0.5), radius: 30, y: -3)
+        
+        .onDisappear {
+            motion.stopUpdate()
+        }
     }
 }
