@@ -11,9 +11,10 @@ import FirebaseAuth
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var path: [Route] = []
-    
+    @StateObject private var router = Router()
+
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack(path: $router.path) {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(stops: [
@@ -34,11 +35,6 @@ struct HomeView: View {
                         .background(Color(.systemGray6))
                         .clipShape(Capsule())
                         .padding(.horizontal)
-                        .onChange(of: viewModel.searchText) { oldValue, newValue in
-                            Task {
-                                await viewModel.searchUsers(query: newValue)
-                            }
-                        }
                     if !viewModel.searchResults.isEmpty {
                         List(viewModel.searchResults) { user in
                             Button {
@@ -46,7 +42,7 @@ struct HomeView: View {
                                 Task {
                                     do {
                                         let chat = try await viewModel.createOrFetchChat(with: user)
-                                        path.append(.chat(chat)) // navigate to chat
+                                        router.goToChat(chat)// navigate to chat
                                         viewModel.searchText = ""  // optional: clear search
                                         viewModel.searchResults = []
                                     } catch {
@@ -72,19 +68,19 @@ struct HomeView: View {
                     }
                     
                     ChatList(chats: viewModel.filteredChats,
-                             formatDate: viewModel.formatDate,
-                             path: $path)
+                             path: $router.path)
                     .environmentObject(viewModel)
+                    .environmentObject(router)
                 }
                 
                 //                .navigationTitle("Chats")
                 .navigationBarTitleDisplayMode(.inline)
                 .tint(Color(hex: "#243949"))
-
+                
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            path.append(.profile)
+                            router.goToProfile()
                         } label: {
                             Image(systemName: "gearshape")
                                 .foregroundStyle(
@@ -131,18 +127,16 @@ struct HomeView: View {
             .onAppear {
                 Task {
                     await viewModel.loadAllUsers()
-                    if Auth.auth().currentUser != nil {
-                        viewModel.listenToChats()
-                    } else {
-                        // Optionally, observe Auth state and start listening when user logs in
-                        Auth.auth().addStateDidChangeListener { _, user in
-                            if user != nil {
-                                viewModel.listenToChats()
-                            }
-                        }
-                    }
                 }
             }
+            .onChange(of: viewModel.selectedChat, { _, chat in
+                if let chat = chat {
+//                    path.append(.chat(chat))
+                    router.goToChat(chat)
+
+                    viewModel.selectedChat = nil
+                }
+            })
             .tint(Color(hex: "#243949"))
         }
     }
@@ -150,17 +144,17 @@ struct HomeView: View {
 
 struct ChatList: View {
     let chats: [Chat]
-    let formatDate: (Date) -> String
     @Binding var path: [Route]
     @State private var showDeleteConfirm = false
     @State private var chatToDelete: Chat? = nil
     @EnvironmentObject var homeVM: HomeViewModel
-    
+    @EnvironmentObject var router: Router
+
     var body: some View {
         List(chats) { chat in
             NavigationLink(value: Route.chat(chat)) {
                 ChatRow(chat: chat,
-                        formattedDate: chat.lastMessage.map { formatDate($0.timestamp) } ?? "")
+                        formattedDate: chat.lastMessage.map { $0.timestamp.chatFormatted() } ?? "")
             }
             .contextMenu {
                 Button(role: .destructive) {
