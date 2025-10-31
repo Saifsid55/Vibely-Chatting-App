@@ -9,6 +9,7 @@ import Foundation
 import FirebaseFirestore
 
 struct Chat: Identifiable, Codable, Hashable {
+    var name = ""
     @DocumentID var id: String?
     var participants: [String]
     var avatarURL: [String: String]?   // optional: [uid: avatarURL]

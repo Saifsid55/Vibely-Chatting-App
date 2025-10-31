@@ -9,6 +9,8 @@ import SwiftUI
 import FirebaseAuth
 
 struct HomeView: View {
+    var name = ""
+
     @EnvironmentObject var viewModel: HomeViewModel
     @State private var path: [Route] = []
     @EnvironmentObject var router: Router
