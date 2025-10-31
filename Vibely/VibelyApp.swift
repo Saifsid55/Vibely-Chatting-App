@@ -58,11 +58,17 @@ struct VibelyApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authVM = AuthViewModel()
+    @StateObject private var homeVM = HomeViewModel()      // ✅ Shared instance
+    @StateObject private var router = Router()             // ✅ Handles navigation stack
+    @StateObject private var tabRouter = TabRouter()
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(authVM)
+                .environmentObject(homeVM)     // ✅ Shared to HomeView, ChatDetailView etc.
+                .environmentObject(router)
+                .environmentObject(tabRouter)
         }
     }
 }
@@ -73,9 +79,9 @@ struct RootView: View {
     var body: some View {
         Group {
             if authVM.isLoading {
-                SplashView() 
+                SplashView()
             } else if authVM.isAuthenticated {
-                HomeView()
+                MainTabView()
             } else if authVM.showUsernameScreen {
                 UsernameView()
             } else {

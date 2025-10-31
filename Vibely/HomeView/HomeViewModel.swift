@@ -217,8 +217,15 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
+//    nonisolated func cancelListeners() {
+//        listener?.remove()
+//        listener = nil
+//    }
+
+    
     deinit {
         listener?.remove()
+        listener = nil
         if let handle = authStateListenerHandle {
             Auth.auth().removeStateDidChangeListener(handle)
         }
