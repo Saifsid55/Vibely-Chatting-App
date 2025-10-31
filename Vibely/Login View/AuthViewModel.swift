@@ -181,6 +181,8 @@ class AuthViewModel: ObservableObject {
             try Auth.auth().signOut()
             self.currentUser = nil
             self.isAuthenticated = false
+            
+            NotificationCenter.default.post(name: .didLogout, object: nil)
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -232,5 +234,8 @@ class AuthViewModel: ObservableObject {
         // If you added confirmPassword in Signup, reset it too
         confirmPassword = ""
     }
-    
+}
+
+extension Notification.Name {
+    static let didLogout = Notification.Name("didLogout")
 }

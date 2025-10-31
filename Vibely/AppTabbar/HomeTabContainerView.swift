@@ -72,6 +72,12 @@ struct MainTabView: View {
                     .animation(.spring(response: 0.4, dampingFraction: 0.8), value: tabRouter.isTabBarVisible)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .didLogout)) { _ in
+            tabRouter.selectedTab = .home
+            tabRouter.isTabBarVisible = true
+            router.path.removeAll()
+            viewModel.allUsersDict.removeAll()
+        }
         .ignoresSafeArea(edges: .bottom)
     }
 }

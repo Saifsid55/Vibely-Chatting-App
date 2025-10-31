@@ -69,7 +69,20 @@ struct VibelyApp: App {
                 .environmentObject(homeVM)     // ✅ Shared to HomeView, ChatDetailView etc.
                 .environmentObject(router)
                 .environmentObject(tabRouter)
+                .onReceive(NotificationCenter.default.publisher(for: .didLogout)) { _ in
+                    resetAppState()
+                }
         }
+    }
+    
+    private func resetAppState() {
+        // 🧼 Clean everything back to default
+        tabRouter.selectedTab = .home
+        tabRouter.isTabBarVisible = true
+        router.path.removeAll()
+        homeVM.allUsersDict.removeAll()
+        
+        print("🔄 App state reset after logout")
     }
 }
 

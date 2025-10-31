@@ -32,18 +32,25 @@ struct ChatDetailView: View {
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: 64)
                 }
-                .onChange(of: viewModel.messages.count) { oldValue, newValue in
-                    if let lastId = viewModel.messages.last?.id {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            scrollProxy.scrollTo(lastId, anchor: .bottom)
+                .onChange(of: viewModel.messages) { oldMessages, newMessages in
+                    guard let newMessage = newMessages.last,
+                          newMessages.count > oldMessages.count else { return }
+                    
+                    if newMessage.isMe { // 👈 Only scroll when I send
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation(.interpolatingSpring(stiffness: 180, damping: 22)) {
+                                scrollProxy.scrollTo(newMessage.id, anchor: .bottom)
+                            }
                         }
                     }
                 }
                 .onAppear {
-                    // Initial scroll when view appears
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    // When view opens, scroll smoothly to bottom
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                         if let lastId = viewModel.messages.last?.id {
-                            scrollProxy.scrollTo(lastId, anchor: .bottom)
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                scrollProxy.scrollTo(lastId, anchor: .bottom)
+                            }
                         }
                     }
                 }
@@ -251,7 +258,7 @@ struct MessageInputView: View {
                                     lineWidth: 2
                                 )
                         }
-                            .shadow(color: .white.opacity(0.4), radius: 20, y: 5)
+                        .shadow(color: .white.opacity(0.4), radius: 20, y: 5)
                     }
             }
             .disabled(viewModel.newMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
