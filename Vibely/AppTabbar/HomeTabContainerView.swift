@@ -36,7 +36,7 @@ struct MainTabView: View {
                     switch tabRouter.selectedTab {
                     case .home:
                         HomeView()
-                            .onAppear { tabRouter.isTabBarVisible = true }
+//                            .onAppear { tabRouter.isTabBarVisible = true }
                     case .chat:
                         EmptyView()
                         
@@ -48,21 +48,28 @@ struct MainTabView: View {
                     switch route {
                     case .chat(let chat):
                         ChatDetailView(chat: chat, allUsers: viewModel.allUsersDict)
-                            .onAppear {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    tabRouter.isTabBarVisible = false
-                                }
-                            } // 👈 hide tab bar
-                            .onDisappear {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    tabRouter.isTabBarVisible = true
-                                }
-                            } // 👈 show again
+                        
+//                            .onAppear {
+//                                withAnimation(.easeInOut(duration: 0.3)) {
+//                                    tabRouter.isTabBarVisible = false
+//                                }
+//                            } // 👈 hide tab bar
+//                            .onDisappear {
+//                                withAnimation(.easeInOut(duration: 0.3)) {
+//                                    tabRouter.isTabBarVisible = true
+//                                }
+//                            } // 👈 show again
                     case .profile:
                         ProfileView()
                     }
                 }
             }
+            .onChange(of: router.path) { oldValue, newValue in
+                          // Show tab bar only when navigation stack is empty
+                          withAnimation(.easeInOut(duration: 0.3)) {
+                              tabRouter.isTabBarVisible = newValue.isEmpty
+                          }
+                      }
             // Tab bar overlay
             if tabRouter.isTabBarVisible {
                 CustomTabBarView(selectedTab: $tabRouter.selectedTab, animation: animation)
