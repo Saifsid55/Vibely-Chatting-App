@@ -14,7 +14,7 @@ class MotionManager: ObservableObject {
     @Published var roll: Double = 0
 
     init() {
-        startUpdates()
+//        startUpdates()
     }
 
     func startUpdates() {

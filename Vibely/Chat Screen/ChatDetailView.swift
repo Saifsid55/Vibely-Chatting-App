@@ -9,7 +9,10 @@ import SwiftUI
 struct ChatDetailView: View {
     @StateObject private var viewModel: ChatViewModel
     @Environment(\.dismiss) private var dismiss
-    
+    @State private var showScrollToBottomButton = false
+    @State private var isNearBottom = true
+    @State private var showNewMessageButton = false
+
     init(chat: Chat, allUsers: [String: AppUserModel]) {
         _viewModel = StateObject(wrappedValue: ChatViewModel(chat: chat, allUsers: allUsers))
     }
@@ -18,69 +21,209 @@ struct ChatDetailView: View {
         ZStack {
             // Messages ScrollView
             ScrollViewReader { scrollProxy in
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(viewModel.messages) { message in
-                            MessageBubble(message: message, viewModel: viewModel)
-                                .id(message.id)
+                // 🆕 WRAPPED ScrollView in ZStack to overlay VStack properly
+                ZStack {
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            scrollTrackingView()
+                            ForEach(viewModel.messages) { message in
+                                MessageBubble(message: message, viewModel: viewModel)
+                                    .id(message.id)
+                            }
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.top, 8)
+                        .padding(.bottom, 8)
+                    }
+                    .coordinateSpace(name: "scroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
+                        let threshold: CGFloat = -150
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showScrollToBottomButton = offset < threshold
+                            isNearBottom = offset > threshold
                         }
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
-                }
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 64)
-                }
-                .onChange(of: viewModel.messages) { oldMessages, newMessages in
-                    guard let newMessage = newMessages.last,
-                          newMessages.count > oldMessages.count else { return }
+                    // 🆕 REDUCED bottom inset since VStack will handle spacing
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 80) // Adjusted for new message button + input
+                    }
+                    .onChange(of: viewModel.messages) { oldMessages, newMessages in
+                        guard let lastMessage = newMessages.last else { return }
+                        print("🔔 New message: isMe=\(lastMessage.isMe), scrolled up=\(showScrollToBottomButton)")
+                        if lastMessage.isMe {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    scrollProxy.scrollTo(lastMessage.id, anchor: .bottom)
+                                }
+                            }
+                            showNewMessageButton = false
+                        }
+                        else {
+                            // 🆕 FIXED: When OTHER user sends message AND you're scrolled up, show button
+                            // Check if scrolled up (showScrollToBottomButton is a better indicator)
+                            if showScrollToBottomButton || !isNearBottom {
+                                print("📩 New message from other user while scrolled up - showing button")
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    showNewMessageButton = true
+                                }
+                            } else {
+                                print("📩 New message but near bottom - auto scrolling")
+                                // If near bottom, just auto-scroll
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        scrollProxy.scrollTo(lastMessage.id, anchor: .bottom)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            if let lastId = viewModel.messages.last?.id {
+                                withAnimation(.easeOut(duration: 0.4)) {
+                                    scrollProxy.scrollTo(lastId, anchor: .bottom)
+                                }
+                            }
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        scrollToBottomButton(scrollProxy: scrollProxy)
+                    }
                     
-                    if newMessage.isMe { // 👈 Only scroll when I send
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation(.interpolatingSpring(stiffness: 180, damping: 22)) {
-                                scrollProxy.scrollTo(newMessage.id, anchor: .bottom)
+                    // 🆕 VStack positioned properly with transparent background
+                    VStack {
+                        Spacer()
+                        
+                        // 🆕 New message button (appears when scrolled up and new message arrives)
+                        if showNewMessageButton {
+                            HStack {
+                                Spacer()
+                                newMessageButton(scrollProxy: scrollProxy)
+                                    .padding(.trailing, 8)
                             }
+                            .padding(.bottom, 8)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
+                        
+                        // Message input at bottom
+                        MessageInputView(viewModel: viewModel)
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 8)
                     }
-                }
-                .onAppear {
-                    // When view opens, scroll smoothly to bottom
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        if let lastId = viewModel.messages.last?.id {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                scrollProxy.scrollTo(lastId, anchor: .bottom)
-                            }
-                        }
-                    }
+                    .background(Color.clear) // 🆕 TRANSPARENT background
                 }
             }
-            VStack {
-                Spacer()
-                MessageInputView(viewModel: viewModel)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 8)
-            }
-            
         }
-        .navigationTitle("") // hide default title
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(false) // ✅ Hide system back button
+        .navigationBarBackButtonHidden(false)
         .background(Color.clear)
         .tint(Color(hex: "#243949"))
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                ChatToolbarView(
-                    chatName: viewModel.chatName,
-                    chatInitial: viewModel.chatInitial,
-                    avatarURL: viewModel.chatAvatarURL,
-                    onDismiss: { dismiss() }
-                )
+                HStack(spacing: 8) {
+                    ChatToolbarView(
+                        chatName: viewModel.chatName,
+                        chatInitial: viewModel.chatInitial,
+                        avatarURL: viewModel.chatAvatarURL,
+                        onDismiss: { dismiss() }
+                    )
+                    
+                    if let mood = viewModel.userMood {
+                        MoodMeterView(mood: mood)
+                            .frame(width: 30, height: 22) // ✅ keep it small
+                            .padding(.leading, 4)
+                    }
+                }
             }
+        }
+    }
+    
+    private func scrollTrackingView() -> some View {
+        GeometryReader { geo in
+            Color.clear
+                .preference(key: ScrollOffsetPreferenceKey.self, value: geo.frame(in: .named("scroll")).minY)
+        }
+        .frame(height: 0)
+    }
+    
+    @ViewBuilder
+    private func scrollToBottomButton(scrollProxy: ScrollViewProxy) -> some View {
+        if showScrollToBottomButton {
+            Button {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    if let lastId = viewModel.messages.last?.id {
+                        scrollProxy.scrollTo(lastId, anchor: .bottom)
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 26))
+                    .foregroundColor(.white)
+                    .background(
+                        Circle()
+                            .fill(
+                                LinearGradient(hexColors: ["#243949", "#517fa4"], direction: .leftToRight)
+                            )
+                            .frame(width: 44, height: 44)
+                    )
+                    .shadow(radius: 6)
+                    .padding(.trailing, 10)
+                    .padding(.bottom, 70)
+            }
+            .transition(.scale)
+            .animation(.spring(), value: showScrollToBottomButton)
+        }
+    }
+    
+    @ViewBuilder
+    private func newMessageButton(scrollProxy: ScrollViewProxy) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                if let lastId = viewModel.messages.last?.id {
+                    scrollProxy.scrollTo(lastId, anchor: .bottom)
+                }
+            }
+            withAnimation {
+                showNewMessageButton = false
+            }
+        } label: {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 48)
+                .background {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(hexColors: ["#243949", "#517fa4"], direction: .leftToRight)
+                            )
+                        
+                        Circle()
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.gray.opacity(0.6),
+                                        Color.gray.opacity(0.3)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2
+                            )
+                    }
+                    .shadow(color: .white.opacity(0.4), radius: 20, y: 5)
+                }
         }
     }
 }
 
+private struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
 
 struct MessageBubble: View {
     let message: Message
@@ -193,7 +336,7 @@ struct ChatToolbarView: View {
                 .clipShape(Circle())
             } else {
                 Circle()
-                    .fill(LinearGradient(hexColors: ["#243949", ""], direction: .leftToRight))
+                    .fill(LinearGradient(hexColors: ["#243949", "#517fa4"], direction: .leftToRight))
                     .frame(width: 40, height: 40)
                     .overlay(Text(chatInitial).foregroundStyle(.white))
             }
@@ -265,5 +408,16 @@ struct MessageInputView: View {
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 8)
+    }
+}
+
+
+extension View {
+    func onAppearOrChange<T: Equatable>(
+        of value: T,
+        perform action: @escaping () -> Void
+    ) -> some View {
+        self.onAppear(perform: action)
+            .onChange(of: value) { _, _ in action() }
     }
 }

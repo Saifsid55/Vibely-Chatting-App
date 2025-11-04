@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ======================
+    // USERS COLLECTION
+    // ======================
+    match /users/{userId} {
+      // Any authenticated user can read other users (for search)
+      allow read: if request.auth != null;
+
+      // Only the user themselves can create, update, or delete their document
+      allow create, update, delete: if request.auth != null
+                                     && request.auth.uid == userId;
+    }
+
+    // ======================
+    // CHATS COLLECTION
+    // ======================
+    match /chats/{chatId} {
+      // Only participants can read chat metadata
+      allow read: if request.auth != null
+                  && request.auth.uid in resource.data.participants;
+
+      // Create chat
+      allow create: if request.auth != null
+                    && request.auth.uid in request.resource.data.participants;
+
+      // Update chat (e.g., lastMessage, updatedAt)
+      allow update: if request.auth != null
+                    && request.auth.uid in resource.data.participants;
+                    
+      // Delete chat
+      allow delete: if request.auth != null
+                    && request.auth.uid in resource.data.participants;
+
+      // ======================
+      // MESSAGES SUBCOLLECTION
+      // ======================
+      match /messages/{messageId} {
+        // Only participants of the parent chat can read messages
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        // Only participants can send messages, and senderId must match their UID
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          && request.resource.data.senderId == request.auth.uid;
+
+        // ✅ Allow participants to update only 'status' field
+        allow update: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['sent', 'delivered', 'seen'];
+
+        // ✅ Only sender can delete their own message
+        allow delete: if request.auth != null
+          && request.auth.uid == resource.data.senderId;
+      }
+    }
+  }
+}

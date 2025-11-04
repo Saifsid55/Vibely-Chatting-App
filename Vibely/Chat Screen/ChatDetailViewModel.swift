@@ -9,6 +9,7 @@ import SwiftUI
 import Combine
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseFunctions
 
 @MainActor
 class ChatViewModel: ObservableObject {
@@ -17,6 +18,7 @@ class ChatViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var animatedMessageIDs: Set<String> = []
+    @Published var userMood: String? = nil
     private var lastKnownStatuses: [String: MessageStatus] = [:]
     
     private let allUsers: [String: AppUserModel]
@@ -90,7 +92,6 @@ class ChatViewModel: ObservableObject {
                         if change.type == .modified, let id = message.id {
                             newAnimatedIDs.insert(id)
                         }
-                        
                         // Optional: auto mark delivered/seen
                         if !message.isMe && message.status == .delivered {
                             self.markMessagesAsSeen()
@@ -111,10 +112,15 @@ class ChatViewModel: ObservableObject {
                 // ✅ Only animate messages that changed status
                 self.animatedMessageIDs.formUnion(newAnimatedIDs)
                 
+                // ✅ Detect mood only for the latest received message (not mine)
+                if let lastReceivedMessage = self.messages.last(where: { !$0.isMe }) {
+                    self.detectMood(for: lastReceivedMessage.text ?? "")
+                }
+                
                 print("Animated IDs this update:", newAnimatedIDs)
             }
     }
-
+    
     
     
     
@@ -164,6 +170,7 @@ class ChatViewModel: ObservableObject {
                 "timestamp": now,
                 "type": "text",
                 "status": MessageStatus.sent.rawValue
+                //                "mood": FieldValue.delete()
             ]
             
             do {
@@ -231,6 +238,14 @@ class ChatViewModel: ObservableObject {
     private func saveStatuses(_ statuses: [String: MessageStatus], for chatId: String) {
         if let data = try? JSONEncoder().encode(statuses) {
             UserDefaults.standard.set(data, forKey: "statuses_\(chatId)")
+        }
+    }
+    
+    func detectMood(for message: String) {
+        MoodDetector.shared.detectMoodDirect(for: message) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.userMood = result
+            }
         }
     }
 }

@@ -1,0 +1,40 @@
+cconst genai = require("@google/genai");
+const functions = require("firebase-functions");
+const { GoogleGenerativeAI } = require("@google/genai");
+require("dotenv").config(); // loads your .env file
+
+// ✅ Initialize Gemini client
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error("❌ Missing GEMINI_API_KEY in .env");
+}
+const client = new GoogleGenerativeAI({ apiKey });
+const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// ✅ Basic Firebase function to test deployment
+exports.helloWorld = functions.https.onRequest((req, res) => {
+  res.send("Hello from Firebase!");
+});
+
+// ✅ New callable function for mood detection
+exports.detectMood = functions.https.onCall(async (data, context) => {
+  try {
+    const { message } = data;
+
+    if (!message) {
+      return { error: "No message provided" };
+    }
+
+    const prompt = `Detect the mood of this message: "${message}".
+    Reply with only one emoji representing the mood.
+    The message could be in English, Hindi, Urdu, or Hinglish.`;
+
+    const result = await model.generateContent(prompt);
+
+    return { mood: result.response.text() };
+  } catch (error) {
+    console.error("❌ Gemini error:", error);
+    return { error: error.message };
+  }
+});
+
