@@ -16,6 +16,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
         configureNavigationBarAppearance()
+        storeGeminiAPIKeyIfNeeded()
         return true
     }
     
@@ -50,6 +51,30 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
     }
+    
+    
+    private func storeGeminiAPIKeyIfNeeded() {
+        if KeychainHelper.shared.read(forKey: KeychainKeys.geminiAPIKey) != nil {
+            print("✅ Gemini API key already exists in Keychain.")
+            return
+        }
+
+        // Try environment variable (for CI/CD)
+        var apiKey: String? = ProcessInfo.processInfo.environment["GEMINI_API_KEY"]
+
+        // Fallback: read from Info.plist (xcconfig provides this)
+        if apiKey == nil || apiKey!.isEmpty {
+            apiKey = Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String
+        }
+
+        if let apiKey, !apiKey.isEmpty {
+            KeychainHelper.shared.save(apiKey, forKey: KeychainKeys.geminiAPIKey)
+            print("🔑 Gemini API key stored securely in Keychain.")
+        } else {
+            print("⚠️ GEMINI_API_KEY not found. Key not stored.")
+        }
+    }
+
 }
 
 

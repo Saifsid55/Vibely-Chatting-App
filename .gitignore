@@ -92,3 +92,7 @@ yarn-error.log*
 *.tmp
 *.swp
 *.zip
+
+# Secrets
+Secrets.xcconfig
+

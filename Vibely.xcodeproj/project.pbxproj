@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		5B33D3F92EBA334100C711B2 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 5B33D3F82EBA334100C711B2 /* FirebaseFunctions */; };
+		5B48DCD22EBCC984002A5566 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */; };
+		5B48DCD42EBCCBC3002A5566 /* Secrets.template.xcconfig  in Resources */ = {isa = PBXBuildFile; fileRef = 5B48DCD32EBCCBC3002A5566 /* Secrets.template.xcconfig  */; };
 		5B5607202E954CCD00D41A72 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B56071F2E954CCD00D41A72 /* FirebaseAI */; };
 		5B5607222E954CCD00D41A72 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5B5607212E954CCD00D41A72 /* FirebaseAnalytics */; };
 		5B5607242E954CCD00D41A72 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5B5607232E954CCD00D41A72 /* FirebaseAnalyticsCore */; };
@@ -20,6 +22,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		5B48DCD32EBCCBC3002A5566 /* Secrets.template.xcconfig  */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Secrets.template.xcconfig "; sourceTree = "<group>"; };
 		5B9795D12E6C60C400976A45 /* Vibely.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vibely.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -70,6 +74,8 @@
 			children = (
 				5B9795D32E6C60C400976A45 /* Vibely */,
 				5B9795D22E6C60C400976A45 /* Products */,
+				5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */,
+				5B48DCD32EBCCBC3002A5566 /* Secrets.template.xcconfig  */,
 			);
 			sourceTree = "<group>";
 		};
@@ -158,6 +164,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5B48DCD42EBCCBC3002A5566 /* Secrets.template.xcconfig  in Resources */,
+				5B48DCD22EBCC984002A5566 /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,6 +184,7 @@
 /* Begin XCBuildConfiguration section */
 		5B9795DA2E6C60C700976A45 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -240,6 +249,7 @@
 		};
 		5B9795DB2E6C60C700976A45 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -297,6 +307,7 @@
 		};
 		5B9795DD2E6C60C700976A45 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -326,6 +337,7 @@
 		};
 		5B9795DE2E6C60C700976A45 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
