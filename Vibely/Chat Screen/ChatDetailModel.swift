@@ -15,7 +15,7 @@ struct Message: Identifiable, Codable, Hashable {
     var senderId: String                   // Firestore UID of sender
     var timestamp: Date
     var type: String                       // "text", "image", "audio"
-    
+    var status: MessageStatus? = .sent
     // Computed property to check if this message was sent by current user
     var isMe: Bool {
         senderId == Auth.auth().currentUser?.uid
@@ -31,4 +31,10 @@ enum MessageTypeEnum: String, Codable {
     case text
     case image
     case audio
+}
+
+enum MessageStatus: String, Codable {
+    case sent       // Message created but not delivered
+    case delivered  // Delivered to recipient
+    case seen       // Recipient has read it
 }

@@ -7,6 +7,7 @@
 import Foundation
 import FirebaseFirestore
 import FirebaseAuth
+import Combine
 
 @MainActor
 final class HomeViewModel: ObservableObject {
@@ -14,14 +15,27 @@ final class HomeViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var searchResults: [AppUserModel] = []
     @Published var allUsersDict: [String: AppUserModel] = [:]
+    @Published var selectedChat: Chat?
+    @Published var isUserAuthenticated = false
     
+    private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
     private var db = Firestore.firestore()
     private var listener: ListenerRegistration?
+    private var cancellables = Set<AnyCancellable>()
     
-    init() { }
+    init() {
+        observeAuthState()
+        $searchText
+            .debounce(for: .milliseconds(400), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] query in
+                Task { await self?.searchUsers(query: query) }
+            }
+            .store(in: &cancellables)
+    }
     
     // MARK: - Listen for chats where current user is a participant
-    func listenToChats() {
+    func listenToChats() async {
         guard let currentUid = Auth.auth().currentUser?.uid else { return }
         listener?.remove()
         
@@ -160,13 +174,6 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Format date
-    func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
     // MARK: - Delete chat
     func deleteChat(_ chat: Chat, deleteFromBackend: Bool = true) async {
         guard let chatId = chat.id else { return }
@@ -185,8 +192,43 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
+    
+    func selectUser(_ user: AppUserModel) async {
+        do {
+            selectedChat = try await createOrFetchChat(with: user)
+        } catch {
+            print("❌ \(error.localizedDescription)")
+        }
+    }
+    
+    
+    func observeAuthState() {
+        // Listen for changes in Firebase authentication state
+        authStateListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self = self else { return }
+            self.isUserAuthenticated = (user != nil)
+            
+            if user != nil {
+                Task { await self.listenToChats() }
+            } else {
+                // Optional: clear local chats when user logs out
+                //                self.filteredChats = []
+            }
+        }
+    }
+    
+//    nonisolated func cancelListeners() {
+//        listener?.remove()
+//        listener = nil
+//    }
+
+    
     deinit {
         listener?.remove()
+        listener = nil
+        if let handle = authStateListenerHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
+        }
     }
 }
 

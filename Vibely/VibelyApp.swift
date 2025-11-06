@@ -16,6 +16,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
         configureNavigationBarAppearance()
+        storeGeminiAPIKeyIfNeeded()
         return true
     }
     
@@ -42,14 +43,38 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let backButtonAppearance = UIBarButtonItemAppearance()
         backButtonAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.clear]
         backButtonAppearance.highlighted.titleTextAttributes = [.foregroundColor: UIColor.clear]
-        
         appearance.backButtonAppearance = backButtonAppearance
         
         // Apply to all navigation bars
+        //        UINavigationBar.appearance().tintColor = UIColor(hex: "#243949")
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
     }
+    
+    
+    private func storeGeminiAPIKeyIfNeeded() {
+        if KeychainHelper.shared.read(forKey: KeychainKeys.geminiAPIKey) != nil {
+            print("✅ Gemini API key already exists in Keychain.")
+            return
+        }
+
+        // Try environment variable (for CI/CD)
+        var apiKey: String? = ProcessInfo.processInfo.environment["GEMINI_API_KEY"]
+
+        // Fallback: read from Info.plist (xcconfig provides this)
+        if apiKey == nil || apiKey!.isEmpty {
+            apiKey = Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String
+        }
+
+        if let apiKey, !apiKey.isEmpty {
+            KeychainHelper.shared.save(apiKey, forKey: KeychainKeys.geminiAPIKey)
+            print("🔑 Gemini API key stored securely in Keychain.")
+        } else {
+            print("⚠️ GEMINI_API_KEY not found. Key not stored.")
+        }
+    }
+
 }
 
 
@@ -58,12 +83,31 @@ struct VibelyApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authVM = AuthViewModel()
+    @StateObject private var homeVM = HomeViewModel()      // ✅ Shared instance
+    @StateObject private var router = Router()             // ✅ Handles navigation stack
+    @StateObject private var tabRouter = TabRouter()
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(authVM)
+                .environmentObject(homeVM)     // ✅ Shared to HomeView, ChatDetailView etc.
+                .environmentObject(router)
+                .environmentObject(tabRouter)
+                .onReceive(NotificationCenter.default.publisher(for: .didLogout)) { _ in
+                    resetAppState()
+                }
         }
+    }
+    
+    private func resetAppState() {
+        // 🧼 Clean everything back to default
+        tabRouter.selectedTab = .home
+        tabRouter.isTabBarVisible = true
+        router.path.removeAll()
+        homeVM.allUsersDict.removeAll()
+        
+        print("🔄 App state reset after logout")
     }
 }
 
@@ -72,8 +116,10 @@ struct RootView: View {
     
     var body: some View {
         Group {
-            if authVM.isAuthenticated {
-                HomeView()
+            if authVM.isLoading {
+                SplashView()
+            } else if authVM.isAuthenticated {
+                MainTabView()
             } else if authVM.showUsernameScreen {
                 UsernameView()
             } else {
@@ -81,5 +127,7 @@ struct RootView: View {
                     .environmentObject(authVM)
             }
         }
+        .animation(.easeInOut, value: authVM.isLoading)
+        .transition(.opacity)
     }
 }

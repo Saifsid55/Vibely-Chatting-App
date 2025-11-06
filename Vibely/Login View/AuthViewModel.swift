@@ -21,10 +21,14 @@ class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var showUsernameScreen = false
     @Published var errorMessage: String?
-    
+    @Published var confirmPassword = ""
+    @Published var isLoading = true
     @Published var verificationID: String?
     private let db = Firestore.firestore()
     
+    var isPasswordMatching: Bool {
+        !password.isEmpty && password == confirmPassword
+    }
     
     init() {
         checkCurrentUser()
@@ -32,17 +36,24 @@ class AuthViewModel: ObservableObject {
     
     func checkCurrentUser() {
         if let user = Auth.auth().currentUser {
-            // Load Firestore user
-            
             Task {
                 try await loadUser(uid: user.uid)
             }
+        } else {
+            // 👇 Add this to end splash for non-logged-in users
+            self.isLoading = false
         }
+        
     }
     
     
     // MARK: - Email Auth
     func signupWithEmail() async throws {
+        guard isPasswordMatching else {
+            errorMessage = "Passwords do not match"
+            return
+        }
+        
         do {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             self.checkUserExistsOrNavigate(uid: result.user.uid, email: email, phone: nil)
@@ -68,7 +79,7 @@ class AuthViewModel: ObservableObject {
             throw NSError(domain: "AuthError", code: 0,
                           userInfo: [NSLocalizedDescriptionKey: "Phone number cannot be empty"])
         }
-
+        
         return try await withCheckedThrowingContinuation { [weak self] continuation in
             PhoneAuthProvider.provider().verifyPhoneNumber(formattedPhone, uiDelegate: nil) { verificationID, error in
                 if let error = error {
@@ -87,7 +98,7 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
-
+    
     func verifyOTP(_ code: String) async throws {
         guard let verificationID = verificationID else { return }
         let credential = PhoneAuthProvider.provider().credential(
@@ -122,6 +133,7 @@ class AuthViewModel: ObservableObject {
             currentUser = user
             isAuthenticated = true
             showUsernameScreen = false
+            isLoading = false
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -130,13 +142,27 @@ class AuthViewModel: ObservableObject {
     // MARK: - Helpers
     private func checkUserExistsOrNavigate(uid: String, email: String?, phone: String?) {
         Task {
-            let doc = try? await db.collection("users").document(uid).getDocument()
-            if let doc = doc, doc.exists {
-                currentUser = try? doc.data(as: AppUserModel.self)
-                isAuthenticated = true
-            } else {
-                // New user -> go to username screen
-                showUsernameScreen = true
+            do {
+                let doc = try await db.collection("users").document(uid).getDocument()
+                if doc.exists {
+                    if let user = try? doc.data(as: AppUserModel.self) {
+                        await MainActor.run {
+                            self.currentUser = user
+                            self.isAuthenticated = true
+                            self.isLoading = false
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.showUsernameScreen = true
+                        self.isLoading = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                }
             }
         }
     }
@@ -146,6 +172,7 @@ class AuthViewModel: ObservableObject {
         if let user = try? doc.data(as: AppUserModel.self) {
             currentUser = user
             isAuthenticated = true
+            self.isLoading = false
         }
     }
     
@@ -154,6 +181,8 @@ class AuthViewModel: ObservableObject {
             try Auth.auth().signOut()
             self.currentUser = nil
             self.isAuthenticated = false
+            
+            NotificationCenter.default.post(name: .didLogout, object: nil)
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -195,4 +224,18 @@ class AuthViewModel: ObservableObject {
         try await Auth.auth().currentUser?.delete()
     }
     
+    func resetFields() {
+        email = ""
+        password = ""
+        username = ""
+        otpCode = ""
+        phoneNumber = ""
+        errorMessage = nil
+        // If you added confirmPassword in Signup, reset it too
+        confirmPassword = ""
+    }
+}
+
+extension Notification.Name {
+    static let didLogout = Notification.Name("didLogout")
 }

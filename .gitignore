@@ -1,5 +1,13 @@
+##########################
+# macOS
+##########################
+.DS_Store
+.AppleDouble
+.LSOverride
 
+##########################
 # Xcode
+##########################
 build/
 DerivedData/
 *.pbxuser
@@ -20,32 +28,71 @@ DerivedData/
 # Xcode temporary files
 *.swp
 *.tmp
-*.DS_Store
 *.plist.lock
 
-# CocoaPods
-Pods/
-
-# Carthage
-Carthage/Build/
-
+##########################
 # Swift Package Manager
+##########################
 Packages/
 .swiftpm/
 .build/
 
-# Google plist (if you don't want to commit it)
-GoogleService-Info.plist
+##########################
+# CocoaPods (if ever used)
+##########################
+Pods/
 
-# Fastlane
+##########################
+# Carthage (if ever used)
+##########################
+Carthage/Build/
+
+##########################
+# Firebase (Functions)
+##########################
+functions/node_modules/
+functions/.env
+functions/.cache/
+functions/.DS_Store
+
+# Log files
+functions/debug.log
+functions/npm-debug.log
+functions/yarn-debug.log
+functions/yarn-error.log
+
+##########################
+# Firebase Project Secrets
+##########################
+GoogleService-Info.plist
+.env
+
+##########################
+# Fastlane (optional automation)
+##########################
 fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 fastlane/README.md
 
-# Node (if using React Native or JS dependencies)
-node_modules/
-
-# Others
+##########################
+# Logs
+##########################
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+##########################
+# Miscellaneous
+##########################
+*.moved-aside
+*.bak
+*.tmp
+*.swp
+*.zip
+
+# Secrets
+Secrets.xcconfig
+
