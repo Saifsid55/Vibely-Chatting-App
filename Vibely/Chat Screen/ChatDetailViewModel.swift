@@ -41,7 +41,7 @@ class ChatViewModel: ObservableObject {
     }
     
     deinit {
-        listener?.remove()                          // ✅ Clean up listener when ViewModel deallocates
+        listener?.remove()
     }
     
     // MARK: - Chat Info for View
@@ -116,7 +116,6 @@ class ChatViewModel: ObservableObject {
                 if let lastReceivedMessage = self.messages.last(where: { !$0.isMe }) {
                     self.detectMood(for: lastReceivedMessage.text ?? "")
                 }
-                
                 print("Animated IDs this update:", newAnimatedIDs)
             }
     }
