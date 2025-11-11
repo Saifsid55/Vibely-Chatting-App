@@ -33,12 +33,15 @@ struct ProfileView: View {
                 ZStack(alignment: .top) {
                     profileImageView
                         .frame(width: profileImageSize, height: profileImageSize)
-                        .offset(y: -profileImageSize / 2)
+                        .offset(y: -profileImageSize / 2 - 2)
                         .zIndex(1)
                     
                     blurredListView
                         .padding(.horizontal, 16)
-                        .background(.ultraThinMaterial)
+                        .background {
+                            RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
+                                .fill(.ultraThinMaterial)
+                        }
                         .cornerRadius(30)
                 }
                 .shadow(radius: 10)
