@@ -60,26 +60,26 @@ struct ChatDetailView: View {
     private func MessagesScrollView(scrollProxy: ScrollViewProxy) -> some View {
         ScrollView {
             
-            GeometryReader { geo in
-                Color.clear
-                    .onChange(of: geo.frame(in: .named("scrollSpace")).minY) { oldValue, newValue in
-                        
-                        scrollOffset = min(newValue, scrollOffset)
-                        
-                        let threshold: CGFloat = scrollOffset + 400
-                        let newIsNearBottom = newValue > threshold
-                        
-                        if newIsNearBottom {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                showScrollToBottomButton = true
-                            }
-                        } else {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                showScrollToBottomButton = false
-                            }
-                        }
-                    }
-            }
+//            GeometryReader { geo in
+//                Color.clear
+//                    .onChange(of: geo.frame(in: .named("scrollSpace")).minY) { oldValue, newValue in
+//                        
+//                        scrollOffset = min(newValue, scrollOffset)
+//                        
+//                        let threshold: CGFloat = scrollOffset + 400
+//                        let newIsNearBottom = newValue > threshold
+//                        
+//                        if newIsNearBottom {
+//                            withAnimation(.easeInOut(duration: 0.25)) {
+//                                showScrollToBottomButton = true
+//                            }
+//                        } else {
+//                            withAnimation(.easeInOut(duration: 0.25)) {
+//                                showScrollToBottomButton = false
+//                            }
+//                        }
+//                    }
+//            }
             
             LazyVStack(spacing: 10) {
                 Color.clear
