@@ -24,6 +24,8 @@ class AuthViewModel: ObservableObject {
     @Published var confirmPassword = ""
     @Published var isLoading = true
     @Published var verificationID: String?
+    @Published var profileImageURL: String? = nil
+
     private let db = Firestore.firestore()
     
     var isPasswordMatching: Bool {
@@ -238,4 +240,5 @@ class AuthViewModel: ObservableObject {
 
 extension Notification.Name {
     static let didLogout = Notification.Name("didLogout")
+    static let profileTabDidDisappear = Notification.Name("profileTabDidDisappear")
 }
