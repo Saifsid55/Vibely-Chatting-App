@@ -12,23 +12,25 @@ class MotionManager: ObservableObject {
     private var motionManager = CMMotionManager()
     @Published var pitch: Double = 0
     @Published var roll: Double = 0
+    var motionEnabled = false
 
-    init() {
-//        startUpdates()
+    init(enableMotion: Bool = false) {
+        self.motionEnabled = enableMotion
+        if enableMotion {
+            startUpdates()
+        }
     }
 
     func startUpdates() {
-        if motionManager.isDeviceMotionAvailable {
-            motionManager.deviceMotionUpdateInterval = 1.0 / 30.0 // 60 fps
-            motionManager.startDeviceMotionUpdates(to: .main) { motion, _ in
-                guard let motion = motion else { return }
-                self.pitch = motion.attitude.pitch
-                self.roll = motion.attitude.roll
-                print("pitch:", self.pitch, "roll:", self.roll)
-            }
+        guard motionManager.isDeviceMotionAvailable else { return }
+        motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
+        motionManager.startDeviceMotionUpdates(to: .main) { motion, _ in
+            guard let motion = motion else { return }
+            self.pitch = motion.attitude.pitch
+            self.roll = motion.attitude.roll
         }
     }
-    
+
     func stopUpdate() {
         motionManager.stopDeviceMotionUpdates()
     }

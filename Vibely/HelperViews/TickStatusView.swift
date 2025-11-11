@@ -20,7 +20,7 @@ struct TickStatusView: View {
                 Circle()
                     .trim(from: 0.20, to: animateTrim ? 1.10 : 0.08)
                     .stroke(style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                    .foregroundColor(statusColor)
+                    .foregroundStyle(statusColor)
                     .rotationEffect(.degrees(-90))
                     .frame(width: 16, height: 16)
             }
