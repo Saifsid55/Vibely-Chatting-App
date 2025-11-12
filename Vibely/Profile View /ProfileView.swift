@@ -39,10 +39,17 @@ struct ProfileView: View {
                         .zIndex(1)
                     
                     blurredListView
+                        .padding(.top, profileImageSize - 4)
                         .padding(.horizontal, 16)
                         .background {
-                            RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
-                                .fill(.ultraThinMaterial)
+                            // Use a ZStack to clip the blur properly
+                            ZStack {
+                                RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
+                                    .fill(Color.clear)
+                                
+                                CustomBlurView(style: .systemThinMaterialDark, intensity: 0.9)
+                                    .clipShape(RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30))
+                            }
                         }
                         .cornerRadius(30)
                 }
@@ -136,7 +143,7 @@ struct ProfileView: View {
                 Text(vm.username)
                     .font(.title2)
                     .fontWeight(.semibold)
-                    .padding(.top, 60)
+//                    .padding(.top, 60)
                 
                 if let email = Auth.auth().currentUser?.email {
                     Text(email)

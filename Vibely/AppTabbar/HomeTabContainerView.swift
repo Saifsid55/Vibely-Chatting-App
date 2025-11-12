@@ -157,7 +157,7 @@ struct CustomTabBarView: View {
                     }
                 }
             )
-            .foregroundStyle(selectedTab == tab ? .white : .gray)
+            .foregroundStyle(selectedTab == tab ? .white : Color(hex: "#243949").opacity(0.8))
         }
     }
 }
