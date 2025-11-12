@@ -11,7 +11,9 @@ struct ProfileView: View {
     @EnvironmentObject var vm: AuthViewModel
     @EnvironmentObject var tabRouter: TabRouter
     
+    @State private var initialOffset: CGFloat = UIScreen.main.bounds.height
     @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
+    
     @GestureState private var dragOffset: CGFloat = 0
     @GestureState private var dragTranslation: CGFloat = 0
     
@@ -44,38 +46,40 @@ struct ProfileView: View {
                         }
                         .cornerRadius(30)
                 }
-                .shadow(radius: 10)
-                .offset(y: currentOffset + dragTranslation)
+                // Smooth scale effect with animation only on gesture end
+                .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
+                .shadow(radius: 10 + abs(dragTranslation) / 20)
+                .offset(y: max(topLimit, min(bottomLimit, currentOffset + dragTranslation)))
+                // Only animate when gesture ends (dragTranslation returns to 0)
+                .animation(dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil, value: currentOffset)
                 
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .updating($dragTranslation) { value, state, _ in
-                            
                             let newOffset = currentOffset + value.translation.height
-                            let translation = value.translation.height
-                            //                            let resistance: CGFloat = 0.25 + 0.75 * exp(-abs(translation)/200)
-                            var adjustedTranslation = translation //* resistance
+                            var adjustedTranslation = value.translation.height
+                            
+                            // Soft resistance near edges
                             if newOffset < topLimit {
-                                adjustedTranslation = (translation / 3) // resistance at top
+                                adjustedTranslation *= 0.4
                             } else if newOffset > bottomLimit {
-                                adjustedTranslation = (translation / 3) // resistance at bottom
+                                adjustedTranslation *= 0.4
                             }
                             
-                            withAnimation(.easeOut(duration: 0.05)) {
-                                state = adjustedTranslation
-                            }
+                            state = adjustedTranslation
                         }
                         .onEnded { value in
                             let newOffset = currentOffset + value.translation.height
+                            let midPoint = (bottomLimit + topLimit) / 2
                             
-                            if newOffset < (bottomLimit + topLimit) / 2 {
+                            // Update offset, animation will be applied by the .animation modifier above
+                            if newOffset < midPoint {
                                 currentOffset = topLimit
                             } else {
                                 currentOffset = bottomLimit
                             }
                         }
                 )
-                
             }
             .onAppear {
                 // Always start hidden
