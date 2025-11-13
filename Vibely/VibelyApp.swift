@@ -86,6 +86,8 @@ struct VibelyApp: App {
     @StateObject private var homeVM = HomeViewModel()      // ✅ Shared instance
     @StateObject private var router = Router()             // ✅ Handles navigation stack
     @StateObject private var tabRouter = TabRouter()
+    @StateObject private var profileVM = ProfileViewModel()
+
     
     var body: some Scene {
         WindowGroup {
@@ -94,6 +96,7 @@ struct VibelyApp: App {
                 .environmentObject(homeVM)     // ✅ Shared to HomeView, ChatDetailView etc.
                 .environmentObject(router)
                 .environmentObject(tabRouter)
+                .environmentObject(profileVM)
                 .onReceive(NotificationCenter.default.publisher(for: .didLogout)) { _ in
                     resetAppState()
                 }

@@ -10,6 +10,7 @@
 		5B33D3F92EBA334100C711B2 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 5B33D3F82EBA334100C711B2 /* FirebaseFunctions */; };
 		5B48DCD22EBCC984002A5566 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */; };
 		5B48DCD42EBCCBC3002A5566 /* Secrets.template.xcconfig  in Resources */ = {isa = PBXBuildFile; fileRef = 5B48DCD32EBCCBC3002A5566 /* Secrets.template.xcconfig  */; };
+		5B48DCF72EC6482B002A5566 /* Cloudinary in Frameworks */ = {isa = PBXBuildFile; productRef = 5B48DCF62EC6482B002A5566 /* Cloudinary */; };
 		5B5607202E954CCD00D41A72 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B56071F2E954CCD00D41A72 /* FirebaseAI */; };
 		5B5607222E954CCD00D41A72 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5B5607212E954CCD00D41A72 /* FirebaseAnalytics */; };
 		5B5607242E954CCD00D41A72 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5B5607232E954CCD00D41A72 /* FirebaseAnalyticsCore */; };
@@ -59,6 +60,7 @@
 				5B5607282E954CCD00D41A72 /* FirebaseAuth in Frameworks */,
 				5B56072E2E954CCD00D41A72 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				5B5607222E954CCD00D41A72 /* FirebaseAnalytics in Frameworks */,
+				5B48DCF72EC6482B002A5566 /* Cloudinary in Frameworks */,
 				5B5607242E954CCD00D41A72 /* FirebaseAnalyticsCore in Frameworks */,
 				5B33D3F92EBA334100C711B2 /* FirebaseFunctions in Frameworks */,
 				5B5607202E954CCD00D41A72 /* FirebaseAI in Frameworks */,
@@ -117,6 +119,7 @@
 				5B56072D2E954CCD00D41A72 /* FirebaseInAppMessaging-Beta */,
 				5B56072F2E954CCD00D41A72 /* FirebaseStorage */,
 				5B33D3F82EBA334100C711B2 /* FirebaseFunctions */,
+				5B48DCF62EC6482B002A5566 /* Cloudinary */,
 			);
 			productName = Vibely;
 			productReference = 5B9795D12E6C60C400976A45 /* Vibely.app */;
@@ -148,6 +151,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				5B48DCF52EC6482B002A5566 /* XCRemoteSwiftPackageReference "cloudinary_ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5B9795D22E6C60C400976A45 /* Products */;
@@ -389,6 +393,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5B48DCF52EC6482B002A5566 /* XCRemoteSwiftPackageReference "cloudinary_ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/cloudinary/cloudinary_ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.2.3;
+			};
+		};
 		5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -404,6 +416,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
+		};
+		5B48DCF62EC6482B002A5566 /* Cloudinary */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B48DCF52EC6482B002A5566 /* XCRemoteSwiftPackageReference "cloudinary_ios" */;
+			productName = Cloudinary;
 		};
 		5B56071F2E954CCD00D41A72 /* FirebaseAI */ = {
 			isa = XCSwiftPackageProductDependency;

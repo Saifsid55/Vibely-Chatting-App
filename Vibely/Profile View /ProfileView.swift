@@ -13,10 +13,12 @@ struct ProfileView: View {
     @EnvironmentObject var vm: AuthViewModel
     @EnvironmentObject var tabRouter: TabRouter
     
-    @StateObject private var profileVM = ProfileViewModel()
+    @EnvironmentObject var profileVM: ProfileViewModel
+    
     @State private var showEditOptions = false
     @State private var showFullCoverImage = false
-    
+    @State private var disableDragAnimation = false
+
     @GestureState private var dragTranslation: CGFloat = 0
     @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
     
@@ -25,79 +27,16 @@ struct ProfileView: View {
     private let profileImageSize: CGFloat = 100
     
     var body: some View {
-        GeometryReader { _ in
+//        GeometryReader { geo in
             ZStack(alignment: .top) {
-                
-                // MARK: - Background Cover Image
-                ZStack(alignment: .topTrailing) {
-                    if let coverURL = profileVM.profile?.coverPhotoURL,
-                       let url = URL(string: coverURL) {
-                        AsyncImage(url: url) { image in
-                            image.resizable().scaledToFill()
-                        } placeholder: {
-                            Color.gray.opacity(0.3)
-                        }
-                        .ignoresSafeArea(edges: .all)
-                    } else {
-                        Asset.welcomeScreen.swiftUIImage
-                            .resizable()
-                            .scaledToFill()
-                            .ignoresSafeArea(edges: .all)
-                    }
-                    
-                    // MARK: - Edit Button
-                    Button {
-                        showEditOptions = true
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .foregroundColor(.white)
-                            .padding(10)
-                            .background(Color.black.opacity(0.4))
-                            .clipShape(Circle())
-                            .padding()
-                    }
+                content
+            }
+//            .frame(width: geo.size.width, height: geo.size.height)
+            .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
+                disableDragAnimation = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    disableDragAnimation = false
                 }
-                
-                // MARK: - Draggable Blur Sheet (Your Original Code)
-                ZStack(alignment: .top) {
-                    profileImageView
-                        .frame(width: profileImageSize, height: profileImageSize)
-                        .offset(y: -profileImageSize / 2 - 2)
-                        .zIndex(1)
-                    
-                    blurredListView
-                        .padding(.top, profileImageSize - 4)
-                        .padding(.horizontal, 16)
-                        .background {
-                            ZStack {
-                                RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
-                                    .fill(Color.clear)
-                                CustomBlurView(style: .systemThinMaterialDark, intensity: 0.9)
-                                    .clipShape(RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30))
-                            }
-                        }
-                        .cornerRadius(30)
-                }
-                .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
-                .shadow(radius: 10 + abs(dragTranslation) / 20)
-                .offset(y: max(topLimit, min(bottomLimit, currentOffset + dragTranslation)))
-                .animation(dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil, value: currentOffset)
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .updating($dragTranslation) { value, state, _ in
-                            let newOffset = currentOffset + value.translation.height
-                            var adjusted = value.translation.height
-                            if newOffset < topLimit || newOffset > bottomLimit {
-                                adjusted *= 0.4
-                            }
-                            state = adjusted
-                        }
-                        .onEnded { value in
-                            let newOffset = currentOffset + value.translation.height
-                            let mid = (bottomLimit + topLimit) / 2
-                            currentOffset = newOffset < mid ? topLimit : bottomLimit
-                        }
-                )
             }
             .onAppear {
                 Task { await profileVM.loadCurrentUserProfile() }
@@ -162,8 +101,127 @@ struct ProfileView: View {
             .photosPicker(isPresented: $profileVM.showCoverPicker,
                           selection: $profileVM.selectedCoverItem,
                           matching: .images)
+//        }
+    }
+    
+    private var content: some View {
+        ZStack(alignment: .top) {
+            coverImageLayer
+            draggableSheetLayer
+            if profileVM.isLoading { loadingOverlay }
         }
     }
+    
+    private var coverImageLayer: some View {
+        ZStack(alignment: .topTrailing) {
+            if let coverURL = profileVM.profile?.coverPhotoURL,
+               let url = URL(string: coverURL) {
+                
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                    default:
+                        Color.gray.opacity(0.3)
+                    }
+                }
+                .id(url)  // ⬅️ MOST IMPORTANT LINE
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.vertical, 0)
+                .clipped()
+                .ignoresSafeArea()
+                
+            } else {
+                Asset.welcomeScreen.swiftUIImage
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+                    .ignoresSafeArea()
+            }
+            
+            Button {
+                showEditOptions = true
+            } label: {
+                Image(systemName: "square.and.pencil")
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(Color.black.opacity(0.4))
+                    .clipShape(Circle())
+                    .padding()
+            }
+        }
+    }
+
+    
+    
+    private var draggableSheetLayer: some View {
+        // MARK: - Draggable Blur Sheet (Your Original Code)
+        ZStack(alignment: .top) {
+            profileImageView
+                .frame(width: profileImageSize, height: profileImageSize)
+                .offset(y: -profileImageSize / 2 - 2)
+                .zIndex(1)
+            
+            blurredListView
+                .padding(.top, profileImageSize - 4)
+                .padding(.horizontal, 16)
+                .background {
+                    ZStack {
+                        RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
+                            .fill(Color.clear)
+                        CustomBlurView(style: .systemMaterialDark, intensity: 0.5)
+                            .clipShape(RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30))
+                    }
+                }
+                .cornerRadius(30)
+        }
+        .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
+        .shadow(radius: 10 + abs(dragTranslation) / 20)
+        .offset(y: max(topLimit, min(bottomLimit, currentOffset + dragTranslation)))
+        .animation(
+            disableDragAnimation ? nil :
+            (dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil),
+            value: currentOffset
+        )
+
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .updating($dragTranslation) { value, state, _ in
+                    let newOffset = currentOffset + value.translation.height
+                    var adjusted = value.translation.height
+                    if newOffset < topLimit || newOffset > bottomLimit {
+                        adjusted *= 0.4
+                    }
+                    state = adjusted
+                }
+                .onEnded { value in
+                    let newOffset = currentOffset + value.translation.height
+                    let mid = (bottomLimit + topLimit) / 2
+                    currentOffset = newOffset < mid ? topLimit : bottomLimit
+                }
+        )
+    }
+    
+    private var loadingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.25)
+                .ignoresSafeArea()
+            
+            ProgressView()
+                .scaleEffect(2.0)
+                .tint(.white)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.black.opacity(0.7))
+                )
+        }
+        .transition(.opacity)
+    }
+    
     
     // MARK: - Profile Image (unchanged)
     @ViewBuilder
