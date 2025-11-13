@@ -6,32 +6,59 @@
 //
 import SwiftUI
 import FirebaseAuth
+import PhotosUI
+import _PhotosUI_SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var vm: AuthViewModel
     @EnvironmentObject var tabRouter: TabRouter
     
-    @State private var initialOffset: CGFloat = UIScreen.main.bounds.height
-    @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
+    @StateObject private var profileVM = ProfileViewModel()
+    @State private var showEditOptions = false
+    @State private var showFullCoverImage = false
     
-    @GestureState private var dragOffset: CGFloat = 0
     @GestureState private var dragTranslation: CGFloat = 0
+    @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
     
     private let topLimit: CGFloat = UIScreen.main.bounds.height * 0.1
     private let bottomLimit: CGFloat = UIScreen.main.bounds.height * 0.5
     private let profileImageSize: CGFloat = 100
     
     var body: some View {
-        GeometryReader { geo in
+        GeometryReader { _ in
             ZStack(alignment: .top) {
                 
                 // MARK: - Background Cover Image
-                Image("welcome_screen")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea(edges: .all)
+                ZStack(alignment: .topTrailing) {
+                    if let coverURL = profileVM.profile?.coverPhotoURL,
+                       let url = URL(string: coverURL) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Color.gray.opacity(0.3)
+                        }
+                        .ignoresSafeArea(edges: .all)
+                    } else {
+                        Asset.welcomeScreen.swiftUIImage
+                            .resizable()
+                            .scaledToFill()
+                            .ignoresSafeArea(edges: .all)
+                    }
+                    
+                    // MARK: - Edit Button
+                    Button {
+                        showEditOptions = true
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.4))
+                            .clipShape(Circle())
+                            .padding()
+                    }
+                }
                 
-                // MARK: - Draggable Blur Sheet
+                // MARK: - Draggable Blur Sheet (Your Original Code)
                 ZStack(alignment: .top) {
                     profileImageView
                         .frame(width: profileImageSize, height: profileImageSize)
@@ -42,83 +69,113 @@ struct ProfileView: View {
                         .padding(.top, profileImageSize - 4)
                         .padding(.horizontal, 16)
                         .background {
-                            // Use a ZStack to clip the blur properly
                             ZStack {
                                 RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
                                     .fill(Color.clear)
-                                
                                 CustomBlurView(style: .systemThinMaterialDark, intensity: 0.9)
                                     .clipShape(RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30))
                             }
                         }
                         .cornerRadius(30)
                 }
-                // Smooth scale effect with animation only on gesture end
                 .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
                 .shadow(radius: 10 + abs(dragTranslation) / 20)
                 .offset(y: max(topLimit, min(bottomLimit, currentOffset + dragTranslation)))
-                // Only animate when gesture ends (dragTranslation returns to 0)
                 .animation(dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil, value: currentOffset)
-                
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .updating($dragTranslation) { value, state, _ in
                             let newOffset = currentOffset + value.translation.height
-                            var adjustedTranslation = value.translation.height
-                            
-                            // Soft resistance near edges
-                            if newOffset < topLimit {
-                                adjustedTranslation *= 0.4
-                            } else if newOffset > bottomLimit {
-                                adjustedTranslation *= 0.4
+                            var adjusted = value.translation.height
+                            if newOffset < topLimit || newOffset > bottomLimit {
+                                adjusted *= 0.4
                             }
-                            
-                            state = adjustedTranslation
+                            state = adjusted
                         }
                         .onEnded { value in
                             let newOffset = currentOffset + value.translation.height
-                            let midPoint = (bottomLimit + topLimit) / 2
-                            
-                            // Update offset, animation will be applied by the .animation modifier above
-                            if newOffset < midPoint {
-                                currentOffset = topLimit
-                            } else {
-                                currentOffset = bottomLimit
-                            }
+                            let mid = (bottomLimit + topLimit) / 2
+                            currentOffset = newOffset < mid ? topLimit : bottomLimit
                         }
                 )
             }
             .onAppear {
-                // Always start hidden
-                currentOffset = UIScreen.main.bounds.height
-                // Then animate into position
+                Task { await profileVM.loadCurrentUserProfile() }
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.05)) {
                     currentOffset = UIScreen.main.bounds.height * 0.25
                 }
             }
-            .onDisappear {
-                // Instantly reset when leaving
-                withTransaction(Transaction(animation: .none)) {
-                    currentOffset = UIScreen.main.bounds.height
+            .actionSheet(isPresented: $showEditOptions) {
+                ActionSheet(
+                    title: Text("Cover Photo"),
+                    buttons: [
+                        .default(Text("Change Picture")) {
+                            profileVM.showCoverPicker = true
+                        },
+                        .default(Text("View Picture")) {
+                            showFullCoverImage = true
+                        },
+                        .cancel()
+                    ]
+                )
+            }
+            .fullScreenCover(isPresented: $showFullCoverImage) {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    
+                    if let coverURL = profileVM.profile?.coverPhotoURL,
+                       let url = URL(string: coverURL) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView().tint(.white)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .id(url) // <— ensures new image forces refresh
+                                    .onTapGesture { showFullCoverImage = false }
+                            case .failure:
+                                Text("Failed to load image")
+                                    .foregroundStyle(.white)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    } else {
+                        Text("No Cover Photo")
+                            .foregroundStyle(.white)
+                    }
+                    // ✅ Close Button
+                    Button {
+                        showFullCoverImage = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(20)
+                    }
+                    .padding(.top, 16)
+                    .padding(.leading, 16)
                 }
             }
+            .photosPicker(isPresented: $profileVM.showCoverPicker,
+                          selection: $profileVM.selectedCoverItem,
+                          matching: .images)
         }
     }
     
-    // MARK: - Profile Image
+    // MARK: - Profile Image (unchanged)
     @ViewBuilder
     private var profileImageView: some View {
         if let profileImageURL = vm.profileImageURL, !profileImageURL.isEmpty {
             AsyncImage(url: URL(string: profileImageURL)) { phase in
                 switch phase {
-                case .empty:
-                    ProgressView().frame(width: 100, height: 100)
+                case .empty: ProgressView()
                 case .success(let image):
-                    image.resizable().scaledToFill().frame(width: 100, height: 100).clipShape(Circle())
-                case .failure:
-                    fallbackInitialsView
-                @unknown default:
-                    fallbackInitialsView
+                    image.resizable().scaledToFill()
+                case .failure: fallbackInitialsView
+                @unknown default: fallbackInitialsView
                 }
             }
         } else {
@@ -137,13 +194,13 @@ struct ProfileView: View {
             .frame(width: 100, height: 100)
     }
     
+    // MARK: - Blurred List (unchanged)
     private var blurredListView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
                 Text(vm.username)
                     .font(.title2)
                     .fontWeight(.semibold)
-//                    .padding(.top, 60)
                 
                 if let email = Auth.auth().currentUser?.email {
                     Text(email)

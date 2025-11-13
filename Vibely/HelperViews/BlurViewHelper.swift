@@ -7,7 +7,7 @@
 
 import UIKit
 import SwiftUI
-// Create a custom blur view using UIVisualEffectView
+
 struct CustomBlurView: UIViewRepresentable {
     var style: UIBlurEffect.Style
     var intensity: CGFloat // 0.0 to 1.0
