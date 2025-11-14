@@ -129,7 +129,7 @@ struct ProfileView: View {
                 }
                 .id(url)  // ⬅️ MOST IMPORTANT LINE
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.vertical, 0)
+                .padding(.horizontal, 0)
                 .clipped()
                 .ignoresSafeArea()
                 
@@ -172,7 +172,7 @@ struct ProfileView: View {
                     ZStack {
                         RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30)
                             .fill(Color.clear)
-                        CustomBlurView(style: .systemMaterialDark, intensity: 0.5)
+                        CustomBlurView(style: .systemChromeMaterialDark, intensity: 0.95)
                             .clipShape(RoundedTopArcShape(profileRadius: profileImageSize / 2, padding: 8, cornerRadius: 30))
                     }
                 }

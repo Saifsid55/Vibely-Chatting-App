@@ -36,6 +36,8 @@ class AuthViewModel: ObservableObject {
         "gender": "",
         "location": "",
         "phoneNumber": "",
+        "coverPhotoHash": "",
+        "profilePhotoHash": "",
         "photoURL": "",
         "profession": "",
         "updatedAt": FieldValue.serverTimestamp()

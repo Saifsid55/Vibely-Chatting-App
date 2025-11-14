@@ -87,12 +87,35 @@ final class ProfileViewModel: ObservableObject {
             self.errorMessage = "Invalid image data"
             return
         }
+        guard let newHash = uiImage.sha256() else {
+            self.errorMessage = "Failed to generate image hash"
+            return
+        }
         
+        // 👇 If current profile already has same image hash → skip upload
+        if let oldHash = profile?.coverPhotoHash, oldHash == newHash {
+            print("⚠️ Same cover photo selected — skipping upload.")
+            return
+        }
+        
+        // MARK: - Delete old cover photo (if exists)
+        if let oldURL = profile?.coverPhotoURL,
+           let publicId = cloudinary.extractPublicId(from: oldURL) {
+            do {
+                try await cloudinary.deleteImageViaFirebase(publicId: publicId)
+                print("🗑️ Old cover image deleted")
+            } catch {
+                print("⚠️ Failed to delete old image:", error.localizedDescription)
+            }
+        }
+        
+        // MARK: - Upload new image
         do {
             let secureURL = try await cloudinary.upload(image: uiImage, type: .cover)
             
             try await db.collection("users").document(uid).updateData([
                 "coverPhotoURL": secureURL,
+                "coverPhotoHash": newHash,
                 "updatedAt": FieldValue.serverTimestamp()
             ])
             

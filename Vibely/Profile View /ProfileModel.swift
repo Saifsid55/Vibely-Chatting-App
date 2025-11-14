@@ -26,7 +26,8 @@ struct UserProfileModel: Identifiable, Codable {
     var bio: String?
     var displayName: String?
     var location: String?        
-
+    var coverPhotoHash: String?      // <--- ADD THIS
+    var profilePhotoHash: String?
     var createdAt: Date?          // Firestore Timestamp → Date (OK)
     var updatedAt: Date?
 }
