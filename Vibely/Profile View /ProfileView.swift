@@ -20,10 +20,10 @@ struct ProfileView: View {
     @State private var disableDragAnimation = false
     @State private var cropImage: UIImage?
     @State private var cropItem: CropImageItem?
-
+    
     @State private var showCropper = false
     @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
-
+    
     @GestureState private var dragTranslation: CGFloat = 0
     
     private let topLimit: CGFloat = UIScreen.main.bounds.height * 0.1
@@ -31,100 +31,101 @@ struct ProfileView: View {
     private let profileImageSize: CGFloat = 100
     
     var body: some View {
-//        GeometryReader { geo in
-            ZStack(alignment: .top) {
-                content
+        //        GeometryReader { geo in
+        ZStack(alignment: .top) {
+            content
+        }
+        //            .frame(width: geo.size.width, height: geo.size.height)
+        .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
+            disableDragAnimation = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                disableDragAnimation = false
             }
-//            .frame(width: geo.size.width, height: geo.size.height)
-            .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
-                disableDragAnimation = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    disableDragAnimation = false
-                }
+        }
+        .onAppear {
+            Task { await profileVM.loadCurrentUserProfile() }
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.05)) {
+                currentOffset = UIScreen.main.bounds.height * 0.25
             }
-            .onAppear {
-                Task { await profileVM.loadCurrentUserProfile() }
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.05)) {
-                    currentOffset = UIScreen.main.bounds.height * 0.25
-                }
+        }
+        .confirmationDialog(
+            "Cover Photo",
+            isPresented: $showEditOptions,
+            titleVisibility: .visible
+        ) {
+            Button("Change Picture") {
+                profileVM.showCoverPicker = true
             }
-            .actionSheet(isPresented: $showEditOptions) {
-                ActionSheet(
-                    title: Text("Cover Photo"),
-                    buttons: [
-                        .default(Text("Change Picture")) {
-                            profileVM.showCoverPicker = true
-                        },
-                        .default(Text("View Picture")) {
-                            showFullCoverImage = true
-                        },
-                        .cancel()
-                    ]
-                )
+            
+            Button("View Picture") {
+                showFullCoverImage = true
             }
-            .fullScreenCover(isPresented: $showFullCoverImage) {
-                ZStack {
-                    Color.black.ignoresSafeArea()
-                    
-                    if let coverURL = profileVM.profile?.coverPhotoURL,
-                       let url = URL(string: coverURL) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView().tint(.white)
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                                    .id(url) // <— ensures new image forces refresh
-                                    .onTapGesture { showFullCoverImage = false }
-                            case .failure:
-                                Text("Failed to load image")
-                                    .foregroundStyle(.white)
-                            @unknown default:
-                                EmptyView()
-                            }
+            
+            Button("Cancel", role: .cancel) { }
+        }
+        .fullScreenCover(isPresented: $showFullCoverImage) {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                if let coverURL = profileVM.profile?.coverPhotoURL,
+                   let url = URL(string: coverURL) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView().tint(.white)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .id(url) // <— ensures new image forces refresh
+                                .onTapGesture { showFullCoverImage = false }
+                        case .failure:
+                            Text("Failed to load image")
+                                .foregroundStyle(.white)
+                        @unknown default:
+                            EmptyView()
                         }
-                    } else {
-                        Text("No Cover Photo")
-                            .foregroundStyle(.white)
                     }
-                    // ✅ Close Button
-                    Button {
-                        showFullCoverImage = false
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(20)
-                    }
-                    .padding(.top, 16)
-                    .padding(.leading, 16)
+                } else {
+                    Text("No Cover Photo")
+                        .foregroundStyle(.white)
                 }
-            }
-            .photosPicker(isPresented: $profileVM.showCoverPicker,
-                          selection: $profileVM.selectedCoverItem,
-                          matching: .images)
-            .onChange(of: profileVM.tempCoverImageData) { _, newValue in
-                guard let data = newValue,
-                      let img = UIImage(data: data) else { return }
-
-                cropItem = CropImageItem(image: img)   // now safe
-            }
-            .fullScreenCover(item: $cropItem) { item in
-                GenericCropView(
-                    originalImage: item.image,
-                    aspect: .portraitScreen
-                ) { cropped in
-
-                    if let data = cropped.jpegData(compressionQuality: 0.9) {
-                        Task { await profileVM.uploadCoverPhoto(imageData: data) }
-                    }
-
-                    cropItem = nil  // Dismiss after upload
-                    profileVM.tempCoverImageData = nil
+                // ✅ Close Button
+                Button {
+                    showFullCoverImage = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(20)
                 }
+                .padding(.top, 16)
+                .padding(.leading, 16)
             }
+        }
+        .photosPicker(isPresented: $profileVM.showCoverPicker,
+                      selection: $profileVM.selectedCoverItem,
+                      matching: .images)
+        .onChange(of: profileVM.tempCoverImageData) { _, newValue in
+            guard let data = newValue,
+                  let img = UIImage(data: data) else { return }
+            
+            cropItem = CropImageItem(image: img)   // now safe
+        }
+        .fullScreenCover(item: $cropItem) { item in
+            GenericCropView(
+                originalImage: item.image,
+                aspect: .portraitScreen
+            ) { cropped in
+                
+                if let data = cropped.jpegData(compressionQuality: 0.9) {
+                    Task { await profileVM.uploadCoverPhoto(imageData: data) }
+                }
+                
+                cropItem = nil  // Dismiss after upload
+                profileVM.tempCoverImageData = nil
+            }
+        }
     }
     
     private var content: some View {
@@ -177,7 +178,7 @@ struct ProfileView: View {
             }
         }
     }
-
+    
     
     
     private var draggableSheetLayer: some View {
@@ -206,10 +207,10 @@ struct ProfileView: View {
         .offset(y: max(topLimit, min(bottomLimit, currentOffset + dragTranslation)))
         .animation(
             disableDragAnimation ? nil :
-            (dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil),
+                (dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil),
             value: currentOffset
         )
-
+        
         .gesture(
             DragGesture(minimumDistance: 0)
                 .updating($dragTranslation) { value, state, _ in
