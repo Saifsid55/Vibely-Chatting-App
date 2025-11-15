@@ -64,16 +64,14 @@ exports.detectMood = functions.https.onCall(async (data, context) => {
 // =======================
 
 exports.deleteCloudinaryImage = functions.https.onCall(async (data, context) => {
-  console.log("📩 Incoming delete request:", JSON.stringify(data, null, 2));
+  console.log("📩 Delete request:", data);
 
-  // Runtime Cloudinary config
   cloudinary.config({
     cloud_name: functions.config().cloudinary.cloud_name,
     api_key: functions.config().cloudinary.api_key,
     api_secret: functions.config().cloudinary.api_secret
   });
 
-  // Auth check
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "User must be logged in");
   }
@@ -84,15 +82,15 @@ exports.deleteCloudinaryImage = functions.https.onCall(async (data, context) => 
   }
 
   try {
-    console.log("🗑️ Deleting via Cloudinary Admin API:", publicId);
+    console.log("🗑️ Deleting via Admin API:", publicId);
 
     const result = await cloudinary.api.delete_resources([publicId], {
       resource_type: "image",
-      type: "upload",
-      invalidate: true   // ⚠ MUST for CDN + unsigned uploads
+      type: "upload",      // 🔥 REQUIRED FOR SIGNED UPLOADS
+      invalidate: true
     });
 
-    console.log("🟢 Cloudinary Admin API delete response:", result);
+    console.log("🟢 Cloudinary Admin API result:", result);
 
     return {
       success: true,
@@ -100,7 +98,7 @@ exports.deleteCloudinaryImage = functions.https.onCall(async (data, context) => 
     };
 
   } catch (error) {
-    console.error("❌ Cloudinary Admin API delete error:", error);
+    console.error("❌ Cloudinary delete error:", error);
     throw new functions.https.HttpsError("internal", error.message);
   }
 });

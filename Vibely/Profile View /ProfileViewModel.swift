@@ -20,6 +20,7 @@ final class ProfileViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     // Photo picker state
+    @Published var tempCoverImageData: Data?
     @Published var showCoverPicker = false
     @Published var selectedCoverItem: PhotosPickerItem? {
         didSet { Task { await handleCoverSelection() } }
@@ -186,7 +187,7 @@ final class ProfileViewModel: ObservableObject {
         do {
             if let data = try await item.loadTransferable(type: Data.self) {
                 print("📸 Selected image data: \(data.count) bytes")
-                await uploadCoverPhoto(imageData: data)            // <-- now matches signature
+                self.tempCoverImageData = data
             } else {
                 self.errorMessage = "Failed to read selected image"
             }

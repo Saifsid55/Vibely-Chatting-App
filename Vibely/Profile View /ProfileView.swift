@@ -18,9 +18,13 @@ struct ProfileView: View {
     @State private var showEditOptions = false
     @State private var showFullCoverImage = false
     @State private var disableDragAnimation = false
+    @State private var cropImage: UIImage?
+    @State private var cropItem: CropImageItem?
+
+    @State private var showCropper = false
+    @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
 
     @GestureState private var dragTranslation: CGFloat = 0
-    @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
     
     private let topLimit: CGFloat = UIScreen.main.bounds.height * 0.1
     private let bottomLimit: CGFloat = UIScreen.main.bounds.height * 0.5
@@ -101,7 +105,26 @@ struct ProfileView: View {
             .photosPicker(isPresented: $profileVM.showCoverPicker,
                           selection: $profileVM.selectedCoverItem,
                           matching: .images)
-//        }
+            .onChange(of: profileVM.tempCoverImageData) { _, newValue in
+                guard let data = newValue,
+                      let img = UIImage(data: data) else { return }
+
+                cropItem = CropImageItem(image: img)   // now safe
+            }
+            .fullScreenCover(item: $cropItem) { item in
+                GenericCropView(
+                    originalImage: item.image,
+                    aspect: .portraitScreen
+                ) { cropped in
+
+                    if let data = cropped.jpegData(compressionQuality: 0.9) {
+                        Task { await profileVM.uploadCoverPhoto(imageData: data) }
+                    }
+
+                    cropItem = nil  // Dismiss after upload
+                    profileVM.tempCoverImageData = nil
+                }
+            }
     }
     
     private var content: some View {
@@ -314,4 +337,9 @@ struct ProfileView: View {
             .padding(.top, profileImageSize / 2)
         }
     }
+}
+
+struct CropImageItem: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
