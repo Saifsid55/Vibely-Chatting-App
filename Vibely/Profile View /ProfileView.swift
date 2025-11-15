@@ -3,7 +3,9 @@
 //  Vibely
 //
 //  Created by Mohd Saif on 03/10/25.
+//  Updated: 2025-11-15 (full integration)
 //
+
 import SwiftUI
 import FirebaseAuth
 import PhotosUI
@@ -12,30 +14,31 @@ import _PhotosUI_SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var vm: AuthViewModel
     @EnvironmentObject var tabRouter: TabRouter
-    
     @EnvironmentObject var profileVM: ProfileViewModel
     
-    @State private var showEditOptions = false
-    @State private var showFullCoverImage = false
-    @State private var disableDragAnimation = false
-    @State private var cropImage: UIImage?
+    // MARK: - UI State
+    @State private var activeEditType: ImageEditType?
+    @State private var cropType: ImageEditType?
     @State private var cropItem: CropImageItem?
     
-    @State private var showCropper = false
-    @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
+    @State private var showFullCoverImage: Bool = false
+    @State private var showFullProfileImage: Bool = false
     
+    @State private var disableDragAnimation = false
+    @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
     @GestureState private var dragTranslation: CGFloat = 0
+    
+    @State private var showEditDialog = false
+    //    @State private var cropType: ImageEditType?
     
     private let topLimit: CGFloat = UIScreen.main.bounds.height * 0.1
     private let bottomLimit: CGFloat = UIScreen.main.bounds.height * 0.5
     private let profileImageSize: CGFloat = 100
     
     var body: some View {
-        //        GeometryReader { geo in
         ZStack(alignment: .top) {
             content
         }
-        //            .frame(width: geo.size.width, height: geo.size.height)
         .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
             disableDragAnimation = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -48,21 +51,27 @@ struct ProfileView: View {
                 currentOffset = UIScreen.main.bounds.height * 0.25
             }
         }
+        
+        // Generic confirmation dialog for cover/profile actions
         .confirmationDialog(
-            "Cover Photo",
-            isPresented: $showEditOptions,
+            "Options",
+            isPresented: $showEditDialog,
             titleVisibility: .visible
         ) {
-            Button("Change Picture") {
-                profileVM.showCoverPicker = true
+            if cropType == .cover {
+                Button("Change Picture") { profileVM.showCoverPicker = true }
+                Button("View Picture") { showFullCoverImage = true }
             }
             
-            Button("View Picture") {
-                showFullCoverImage = true
+            if cropType == .profile {
+                Button("Change Picture") { profileVM.showProfilePicker = true }
+                Button("View Picture") { showFullProfileImage = true }
             }
             
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
         }
+        
+        // Fullscreen cover image viewer
         .fullScreenCover(isPresented: $showFullCoverImage) {
             ZStack {
                 Color.black.ignoresSafeArea()
@@ -77,7 +86,7 @@ struct ProfileView: View {
                             image
                                 .resizable()
                                 .scaledToFit()
-                                .id(url) // <— ensures new image forces refresh
+                                .id(url) // ensure refresh when url changes
                                 .onTapGesture { showFullCoverImage = false }
                         case .failure:
                             Text("Failed to load image")
@@ -90,44 +99,137 @@ struct ProfileView: View {
                     Text("No Cover Photo")
                         .foregroundStyle(.white)
                 }
-                // ✅ Close Button
-                Button {
-                    showFullCoverImage = false
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundColor(.white.opacity(0.9))
-                        .padding(20)
+                
+                // Close button (top-left)
+                VStack {
+                    HStack {
+                        Button {
+                            showFullCoverImage = false
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white.opacity(0.9))
+                                .padding(20)
+                        }
+                        Spacer()
+                    }
+                    Spacer()
                 }
-                .padding(.top, 16)
-                .padding(.leading, 16)
             }
         }
+        
+        // Fullscreen profile image viewer (1:1 square with black bars top/bottom and dismiss button)
+        .fullScreenCover(isPresented: $showFullProfileImage) {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                if let profileURL = profileVM.profile?.photoURL,
+                   let url = URL(string: profileURL) {
+                    GeometryReader { geo in
+                        let side = min(geo.size.width, geo.size.height)
+                        VStack {
+                            Spacer()
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView().tint(.white)
+                                        .frame(width: side, height: side)
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: side, height: side) // 1:1 square visual
+                                        .background(Color.black)
+                                        .onTapGesture { showFullProfileImage = false }
+                                case .failure:
+                                    Text("Failed to load image")
+                                        .foregroundStyle(.white)
+                                        .frame(width: side, height: side)
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                } else {
+                    Text("No Profile Photo")
+                        .foregroundStyle(.white)
+                }
+                
+                // Close button
+                VStack {
+                    HStack {
+                        Button {
+                            showFullProfileImage = false
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white.opacity(0.9))
+                                .padding(20)
+                        }
+                        Spacer()
+                    }
+                    Spacer()
+                }
+            }
+        }
+        
+        // Attach both PhotosPickers at root so they can appear from anywhere
         .photosPicker(isPresented: $profileVM.showCoverPicker,
                       selection: $profileVM.selectedCoverItem,
                       matching: .images)
+        .photosPicker(isPresented: $profileVM.showProfilePicker,
+                      selection: $profileVM.selectedProfileItem,
+                      matching: .images)
+        
+        // Handle cover selection -> set cropType + cropItem
         .onChange(of: profileVM.tempCoverImageData) { _, newValue in
             guard let data = newValue,
                   let img = UIImage(data: data) else { return }
             
-            cropItem = CropImageItem(image: img)   // now safe
+            cropType = .cover
+            cropItem = CropImageItem(image: img)
         }
+        
+        // Handle profile selection -> set cropType + cropItem
+        .onChange(of: profileVM.tempProfileImageData) { _, newValue in
+            guard let data = newValue,
+                  let img = UIImage(data: data) else { return }
+            
+            cropType = .profile
+            cropItem = CropImageItem(image: img)
+        }
+        
+        // Cropper fullScreenCover
         .fullScreenCover(item: $cropItem) { item in
             GenericCropView(
                 originalImage: item.image,
-                aspect: .portraitScreen
+                aspect: cropType == .profile ? .square : .portraitScreen
             ) { cropped in
-                
+                // single crop completion: upload based on cropType
                 if let data = cropped.jpegData(compressionQuality: 0.9) {
-                    Task { await profileVM.uploadCoverPhoto(imageData: data) }
+                    switch cropType {
+                    case .cover:
+                        Task { await profileVM.uploadCoverPhoto(imageData: data) }
+                    case .profile:
+                        Task { await profileVM.uploadProfilePhoto(imageData: data) }
+                    case .none:
+                        break
+                    }
                 }
                 
-                cropItem = nil  // Dismiss after upload
+                // reset states
+                cropItem = nil
+                cropType = nil
                 profileVM.tempCoverImageData = nil
+                profileVM.tempProfileImageData = nil
             }
         }
     }
     
+    // MARK: - Main content
     private var content: some View {
         ZStack(alignment: .top) {
             coverImageLayer
@@ -136,27 +238,29 @@ struct ProfileView: View {
         }
     }
     
+    // MARK: - Cover image area
     private var coverImageLayer: some View {
         ZStack(alignment: .topTrailing) {
             if let coverURL = profileVM.profile?.coverPhotoURL,
                let url = URL(string: coverURL) {
-                
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image
                             .resizable()
-                            .scaledToFit()
-                    default:
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                    case .empty:
+                        Color.gray.opacity(0.3)
+                    case .failure:
+                        Color.gray.opacity(0.3)
+                    @unknown default:
                         Color.gray.opacity(0.3)
                     }
                 }
-                .id(url)  // ⬅️ MOST IMPORTANT LINE
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 0)
-                .clipped()
+                .id(url)
                 .ignoresSafeArea()
-                
             } else {
                 Asset.welcomeScreen.swiftUIImage
                     .resizable()
@@ -166,8 +270,10 @@ struct ProfileView: View {
                     .ignoresSafeArea()
             }
             
+            // Edit button for cover
             Button {
-                showEditOptions = true
+                cropType = .cover
+                showEditDialog = true
             } label: {
                 Image(systemName: "square.and.pencil")
                     .foregroundColor(.white)
@@ -179,16 +285,19 @@ struct ProfileView: View {
         }
     }
     
-    
-    
+    // MARK: - Draggable sheet with profile image
     private var draggableSheetLayer: some View {
-        // MARK: - Draggable Blur Sheet (Your Original Code)
         ZStack(alignment: .top) {
             profileImageView
                 .frame(width: profileImageSize, height: profileImageSize)
                 .offset(y: -profileImageSize / 2 - 2)
                 .zIndex(1)
+                .onTapGesture {
+                    cropType = .profile
+                    showEditDialog = true
+                }
             
+            // The sheet content
             blurredListView
                 .padding(.top, profileImageSize - 4)
                 .padding(.horizontal, 16)
@@ -210,7 +319,6 @@ struct ProfileView: View {
                 (dragTranslation == 0 ? .interactiveSpring(response: 0.4, dampingFraction: 0.85) : nil),
             value: currentOffset
         )
-        
         .gesture(
             DragGesture(minimumDistance: 0)
                 .updating($dragTranslation) { value, state, _ in
@@ -229,10 +337,10 @@ struct ProfileView: View {
         )
     }
     
+    // MARK: - Loading overlay
     private var loadingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.25)
-                .ignoresSafeArea()
+            Color.black.opacity(0.25).ignoresSafeArea()
             
             ProgressView()
                 .scaleEffect(2.0)
@@ -246,18 +354,26 @@ struct ProfileView: View {
         .transition(.opacity)
     }
     
-    
-    // MARK: - Profile Image (unchanged)
+    // MARK: - Profile image view
     @ViewBuilder
     private var profileImageView: some View {
-        if let profileImageURL = vm.profileImageURL, !profileImageURL.isEmpty {
+        if let profileImageURL = profileVM.profile?.photoURL, !profileImageURL.isEmpty {
             AsyncImage(url: URL(string: profileImageURL)) { phase in
                 switch phase {
-                case .empty: ProgressView()
+                case .empty:
+                    ProgressView()
+                        .frame(width: profileImageSize, height: profileImageSize)
                 case .success(let image):
-                    image.resizable().scaledToFill()
-                case .failure: fallbackInitialsView
-                @unknown default: fallbackInitialsView
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: profileImageSize, height: profileImageSize)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                case .failure:
+                    fallbackInitialsView
+                @unknown default:
+                    fallbackInitialsView
                 }
             }
         } else {
@@ -273,10 +389,11 @@ struct ProfileView: View {
                     .font(.largeTitle)
                     .foregroundColor(.white)
             )
-            .frame(width: 100, height: 100)
+            .frame(width: profileImageSize, height: profileImageSize)
+            .overlay(Circle().stroke(Color.white, lineWidth: 2))
     }
     
-    // MARK: - Blurred List (unchanged)
+    // MARK: - Blurred List Content
     private var blurredListView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
@@ -340,7 +457,33 @@ struct ProfileView: View {
     }
 }
 
+// MARK: - CropImageItem & ImageEditType
 struct CropImageItem: Identifiable {
     let id = UUID()
     let image: UIImage
 }
+
+enum ImageEditType: Identifiable {
+    case cover
+    case profile
+    
+    var id: String {
+        switch self {
+        case .cover: return "cover"
+        case .profile: return "profile"
+        }
+    }
+}
+
+//// MARK: - Preview
+//#if DEBUG
+//struct ProfileView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ProfileView()
+//            .environmentObject(AuthViewModel.sample)
+//            .environmentObject(TabRouter())
+//            .environmentObject(ProfileViewModel.sample)
+//            .previewDevice("iPhone 14")
+//    }
+//}
+//#endif

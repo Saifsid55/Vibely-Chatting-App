@@ -26,6 +26,12 @@ final class ProfileViewModel: ObservableObject {
         didSet { Task { await handleCoverSelection() } }
     }
     
+    @Published var tempProfileImageData: Data?
+    @Published var showProfilePicker = false
+    @Published var selectedProfileItem: PhotosPickerItem? {
+        didSet { Task { await handleProfileSelection() } }
+    }
+    
     private let cloudinary: CloudinaryService
     private let db: Firestore
     
@@ -139,14 +145,41 @@ final class ProfileViewModel: ObservableObject {
             return
         }
         
+        guard let newHash = uiImage.sha256() else {
+            self.errorMessage = "Failed to generate image hash"
+            return
+        }
+        
+        // If same profile photo, skip upload
+        if let oldHash = profile?.profilePhotoHash, oldHash == newHash {
+            print("⚠️ Same profile picture selected — skipping upload.")
+            return
+        }
+        
+        // Delete old profile photo
+        if let oldURL = profile?.photoURL,
+           let publicId = cloudinary.extractPublicId(from: oldURL) {
+            do {
+                try await cloudinary.deleteImageViaFirebase(publicId: publicId)
+                print("🗑️ Old profile picture deleted")
+            } catch {
+                print("⚠️ Failed to delete old profile image:", error.localizedDescription)
+            }
+        }
+        
+        // Upload new profile image
         do {
             let secureURL = try await cloudinary.upload(image: uiImage, type: .profile)
+            
             try await db.collection("users").document(uid).updateData([
                 "photoURL": secureURL,
+                "photoHash": newHash,
                 "updatedAt": FieldValue.serverTimestamp()
             ])
+            
             await loadProfile(for: uid)
-            print("✅ Profile photo uploaded: \(secureURL)")
+            print("✅ Profile photo uploaded:", secureURL)
+            
         } catch {
             self.errorMessage = error.localizedDescription
             print("❌ uploadProfilePhoto error:", error.localizedDescription)
@@ -196,4 +229,24 @@ final class ProfileViewModel: ObservableObject {
             print("❌ PhotosPicker load error:", error.localizedDescription)
         }
     }
+    
+    // MARK: - Handle Profile Picker
+    private func handleProfileSelection() async {
+        guard let item = selectedProfileItem else { return }
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            if let data = try await item.loadTransferable(type: Data.self) {
+                print("📸 Selected PROFILE image: \(data.count) bytes")
+                self.tempProfileImageData = data
+            } else {
+                self.errorMessage = "Failed to read selected profile image"
+            }
+        } catch {
+            self.errorMessage = error.localizedDescription
+            print("❌ Profile PhotosPicker load error:", error.localizedDescription)
+        }
+    }
+    
 }
