@@ -228,4 +228,41 @@ final class ProfileViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+    
+    @MainActor
+    func updateProfileDetails(
+        name: String,
+        bio: String,
+        location: String,
+        gender: String,
+        age: String,
+        profession: String
+    ) async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        do {
+            try await Firestore.firestore()
+                .collection("users")
+                .document(uid)
+                .updateData([
+                    "displayName": name,
+                    "bio": bio,
+                    "location": location,
+                    "gender": gender,
+                    "age": age,
+                    "profession": profession
+                ])
+            
+            // 🔥 Update local model
+            self.profile?.displayName = name
+            self.profile?.bio = bio
+            self.profile?.location = location
+            self.profile?.gender = gender
+            self.profile?.age = age
+            self.profile?.profession = profession
+            
+        } catch {
+            print("❌ Failed updating user profile:", error.localizedDescription)
+        }
+    }
 }

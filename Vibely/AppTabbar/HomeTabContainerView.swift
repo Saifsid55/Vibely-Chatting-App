@@ -36,7 +36,7 @@ struct MainTabView: View {
                     switch tabRouter.selectedTab {
                     case .home:
                         HomeView()
-                        //                            .onAppear { tabRouter.isTabBarVisible = true }
+
                     case .chat:
                         EmptyView()
                         
@@ -52,7 +52,7 @@ struct MainTabView: View {
                         
                     case .profile:
                         ProfileView()
-                            .id(tabRouter.selectedTab)
+                        
                     }
                 }
             }

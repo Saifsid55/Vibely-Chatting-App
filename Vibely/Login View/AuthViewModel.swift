@@ -40,7 +40,8 @@ class AuthViewModel: ObservableObject {
         "profilePhotoHash": "",
         "photoURL": "",
         "profession": "",
-        "updatedAt": FieldValue.serverTimestamp()
+        "updatedAt": FieldValue.serverTimestamp(),
+        "username_lowercase": ""
     ]
     
     private let db = Firestore.firestore()

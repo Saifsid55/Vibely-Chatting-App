@@ -15,6 +15,7 @@ struct ProfileView: View {
     @EnvironmentObject var vm: AuthViewModel
     @EnvironmentObject var tabRouter: TabRouter
     @EnvironmentObject var profileVM: ProfileViewModel
+    @EnvironmentObject var router: Router
     
     // MARK: - UI State
     @State private var activeEditType: ImageEditType?
@@ -23,6 +24,7 @@ struct ProfileView: View {
     
     @State private var showFullCoverImage: Bool = false
     @State private var showFullProfileImage: Bool = false
+    @State private var showEditProfileDetails = false
     
     @State private var disableDragAnimation = false
     @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
@@ -39,6 +41,8 @@ struct ProfileView: View {
         ZStack(alignment: .top) {
             content
         }
+        .navigationBarHidden(true)
+        .navigationBarBackButtonHidden(true)
         .modifier(ProfileChangeHandlers(profileVM: profileVM, disableDragAnimation: $disableDragAnimation))
         .modifier(ProfileAppearModifier(profileVM: profileVM, currentOffset: $currentOffset))
         .modifier(EditDialogModifier(
@@ -59,6 +63,11 @@ struct ProfileView: View {
             cropType: $cropType,
             cropItem: $cropItem
         ))
+        
+        .fullScreenCover(isPresented: $showEditProfileDetails) {
+            EditProfileDetailsView(profileVM: profileVM)
+                .environmentObject(profileVM)
+        }
     }
     
     // MARK: - View Modifiers
@@ -246,17 +255,13 @@ struct ProfileView: View {
             }
             
             // Edit button for cover
-            Button {
-                cropType = .cover
-                showEditDialog = true
-            } label: {
-                Image(systemName: "square.and.pencil")
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Color.black.opacity(0.4))
-                    .clipShape(Circle())
-                    .padding()
-            }
+            ProfileCoverEditButtons(
+                onEditProfileDetails: { showEditProfileDetails = true },
+                onEditCover: {
+                    cropType = .cover
+                    showEditDialog = true
+                }
+            )
         }
     }
     
