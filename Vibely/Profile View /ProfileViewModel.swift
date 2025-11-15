@@ -19,17 +19,17 @@ final class ProfileViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    // Photo picker state
+    // MARK: - Picker States
     @Published var tempCoverImageData: Data?
     @Published var showCoverPicker = false
     @Published var selectedCoverItem: PhotosPickerItem? {
-        didSet { Task { await handleCoverSelection() } }
+        didSet { Task { await handlePickerSelection(for: .cover) } }
     }
     
     @Published var tempProfileImageData: Data?
     @Published var showProfilePicker = false
     @Published var selectedProfileItem: PhotosPickerItem? {
-        didSet { Task { await handleProfileSelection() } }
+        didSet { Task { await handlePickerSelection(for: .profile) } }
     }
     
     private let cloudinary: CloudinaryService
@@ -66,8 +66,8 @@ final class ProfileViewModel: ObservableObject {
         await loadProfile(for: uid)
     }
     
-    // MARK: - Generic firestore field updater
-    func updateProfileField(field: String, value: Any) async {
+    // MARK: - Generic Firestore Update
+    func updateField(_ field: String, value: Any) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         isLoading = true
         defer { isLoading = false }
@@ -83,170 +83,149 @@ final class ProfileViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Upload Cover Photo (Cloudinary)
-    /// Accepts raw image data (from PhotosPicker) — converts to UIImage then uploads
-    func uploadCoverPhoto(imageData: Data) async {
+    
+    // ============================================================
+    // MARK: - UNIFIED IMAGE HANDLER
+    // ============================================================
+    
+    enum UploadType {
+        case cover
+        case profile
+        case gallery
+        
+        var firestoreField: String {
+            switch self {
+            case .cover: return "coverPhotoURL"
+            case .profile: return "photoURL"
+            case .gallery: return "collectionPhotos"
+            }
+        }
+        
+        var hashField: String {
+            switch self {
+            case .cover: return "coverPhotoHash"
+            case .profile: return "photoHash"
+            case .gallery: return ""
+            }
+        }
+        
+        var imageType: CloudinaryUploadType {
+            switch self {
+            case .cover: return .cover
+            case .profile: return .profile
+            case .gallery: return .gallery
+            }
+        }
+    }
+    
+    
+    /// 🔥 One function handles upload for Cover + Profile + Gallery
+    func uploadImage(_ data: Data, type: UploadType) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uiImage = UIImage(data: data) else {
+            errorMessage = "Invalid image data"
+            return
+        }
+        
         isLoading = true
         defer { isLoading = false }
         
-        guard let uiImage = UIImage(data: imageData) else {
-            self.errorMessage = "Invalid image data"
-            return
+        // MARK: - Generate Hash (skip for gallery)
+        var newHash: String?
+        if type != .gallery {
+            newHash = uiImage.sha256()
+            if newHash == nil {
+                errorMessage = "Failed to generate image hash"
+                return
+            }
         }
-        guard let newHash = uiImage.sha256() else {
-            self.errorMessage = "Failed to generate image hash"
+        
+        // MARK: - Skip if same image (cover/profile)
+        if type == .cover,
+           let old = profile?.coverPhotoHash, old == newHash {
+            print("⚠️ Same cover photo — skipping upload")
             return
         }
         
-        // 👇 If current profile already has same image hash → skip upload
-        if let oldHash = profile?.coverPhotoHash, oldHash == newHash {
-            print("⚠️ Same cover photo selected — skipping upload.")
+        if type == .profile,
+           let old = profile?.profilePhotoHash, old == newHash {
+            print("⚠️ Same profile photo — skipping upload")
             return
         }
         
-        // MARK: - Delete old cover photo (if exists)
-        if let oldURL = profile?.coverPhotoURL,
-           let publicId = cloudinary.extractPublicId(from: oldURL) {
-            do {
-                try await cloudinary.deleteImageViaFirebase(publicId: publicId)
-                print("🗑️ Old cover image deleted")
-            } catch {
-                print("⚠️ Failed to delete old image:", error.localizedDescription)
+        
+        // MARK: - Delete old image (except gallery)
+        if type != .gallery {
+            let oldURL = (type == .cover) ? profile?.coverPhotoURL : profile?.photoURL
+            
+            if let url = oldURL,
+               let publicId = cloudinary.extractPublicId(from: url) {
+                do {
+                    try await cloudinary.deleteImageViaFirebase(publicId: publicId)
+                } catch {
+                    print("⚠️ Failed deleting old image:", error.localizedDescription)
+                }
             }
         }
         
         // MARK: - Upload new image
         do {
-            let secureURL = try await cloudinary.upload(image: uiImage, type: .cover)
+            let secureURL = try await cloudinary.upload(image: uiImage, type: type.imageType)
             
-            try await db.collection("users").document(uid).updateData([
-                "coverPhotoURL": secureURL,
-                "coverPhotoHash": newHash,
+            var updateData: [String: Any] = [
+                type.firestoreField: (type == .gallery) ?
+                FieldValue.arrayUnion([secureURL]) : secureURL,
                 "updatedAt": FieldValue.serverTimestamp()
-            ])
+            ]
             
-            await loadProfile(for: uid)
-            print("✅ Cover photo uploaded: \(secureURL)")
-        } catch {
-            self.errorMessage = error.localizedDescription
-            print("❌ uploadCoverPhoto error:", error.localizedDescription)
-        }
-    }
-    
-    // MARK: - Upload Profile Photo (Cloudinary)
-    func uploadProfilePhoto(imageData: Data) async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        isLoading = true
-        defer { isLoading = false }
-        
-        guard let uiImage = UIImage(data: imageData) else {
-            self.errorMessage = "Invalid image data"
-            return
-        }
-        
-        guard let newHash = uiImage.sha256() else {
-            self.errorMessage = "Failed to generate image hash"
-            return
-        }
-        
-        // If same profile photo, skip upload
-        if let oldHash = profile?.profilePhotoHash, oldHash == newHash {
-            print("⚠️ Same profile picture selected — skipping upload.")
-            return
-        }
-        
-        // Delete old profile photo
-        if let oldURL = profile?.photoURL,
-           let publicId = cloudinary.extractPublicId(from: oldURL) {
-            do {
-                try await cloudinary.deleteImageViaFirebase(publicId: publicId)
-                print("🗑️ Old profile picture deleted")
-            } catch {
-                print("⚠️ Failed to delete old profile image:", error.localizedDescription)
+            if type != .gallery, let hash = newHash {
+                updateData[type.hashField] = hash
             }
-        }
-        
-        // Upload new profile image
-        do {
-            let secureURL = try await cloudinary.upload(image: uiImage, type: .profile)
             
-            try await db.collection("users").document(uid).updateData([
-                "photoURL": secureURL,
-                "photoHash": newHash,
-                "updatedAt": FieldValue.serverTimestamp()
-            ])
-            
+            try await db.collection("users").document(uid).updateData(updateData)
             await loadProfile(for: uid)
-            print("✅ Profile photo uploaded:", secureURL)
+            
+            print("✅ Uploaded \(type) → \(secureURL)")
             
         } catch {
             self.errorMessage = error.localizedDescription
-            print("❌ uploadProfilePhoto error:", error.localizedDescription)
         }
     }
     
-    // MARK: - Add Photo to Collection (Cloudinary + Firestore array)
-    func addPhotoToCollection(imageData: Data) async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        isLoading = true
-        defer { isLoading = false }
-        
-        guard let uiImage = UIImage(data: imageData) else {
-            self.errorMessage = "Invalid image data"
-            return
-        }
-        
-        do {
-            let secureURL = try await cloudinary.upload(image: uiImage, type: .gallery)
-            try await db.collection("users").document(uid).updateData([
-                "collectionPhotos": FieldValue.arrayUnion([secureURL]),
-                "updatedAt": FieldValue.serverTimestamp()
-            ])
-            await loadProfile(for: uid)
-            print("✅ Gallery photo added: \(secureURL)")
-        } catch {
-            self.errorMessage = error.localizedDescription
-            print("❌ addPhotoToCollection error:", error.localizedDescription)
-        }
-    }
     
-    // MARK: - Handle PhotosPicker selection
-    private func handleCoverSelection() async {
-        guard let item = selectedCoverItem else { return }
+    // ============================================================
+    // MARK: - UNIFIED PICKER HANDLER
+    // ============================================================
+    
+    private func handlePickerSelection(for type: UploadType) async {
+        let item: PhotosPickerItem?
+        
+        switch type {
+        case .cover: item = selectedCoverItem
+        case .profile: item = selectedProfileItem
+        case .gallery: item = nil
+        }
+        
+        guard let pickerItem = item else { return }
+        
         isLoading = true
         defer { isLoading = false }
         
         do {
-            if let data = try await item.loadTransferable(type: Data.self) {
-                print("📸 Selected image data: \(data.count) bytes")
-                self.tempCoverImageData = data
+            if let data = try await pickerItem.loadTransferable(type: Data.self) {
+                
+                switch type {
+                case .cover: tempCoverImageData = data
+                case .profile: tempProfileImageData = data
+                default: break
+                }
+                
             } else {
-                self.errorMessage = "Failed to read selected image"
+                errorMessage = "Failed to read image"
             }
+            
         } catch {
-            self.errorMessage = error.localizedDescription
-            print("❌ PhotosPicker load error:", error.localizedDescription)
+            errorMessage = error.localizedDescription
         }
     }
-    
-    // MARK: - Handle Profile Picker
-    private func handleProfileSelection() async {
-        guard let item = selectedProfileItem else { return }
-        isLoading = true
-        defer { isLoading = false }
-        
-        do {
-            if let data = try await item.loadTransferable(type: Data.self) {
-                print("📸 Selected PROFILE image: \(data.count) bytes")
-                self.tempProfileImageData = data
-            } else {
-                self.errorMessage = "Failed to read selected profile image"
-            }
-        } catch {
-            self.errorMessage = error.localizedDescription
-            print("❌ Profile PhotosPicker load error:", error.localizedDescription)
-        }
-    }
-    
 }

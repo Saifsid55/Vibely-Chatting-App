@@ -39,193 +39,168 @@ struct ProfileView: View {
         ZStack(alignment: .top) {
             content
         }
-        .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
-            disableDragAnimation = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                disableDragAnimation = false
-            }
-        }
-        .onAppear {
-            Task { await profileVM.loadCurrentUserProfile() }
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.05)) {
-                currentOffset = UIScreen.main.bounds.height * 0.25
-            }
-        }
+        .modifier(ProfileChangeHandlers(profileVM: profileVM, disableDragAnimation: $disableDragAnimation))
+        .modifier(ProfileAppearModifier(profileVM: profileVM, currentOffset: $currentOffset))
+        .modifier(EditDialogModifier(
+            showEditDialog: $showEditDialog,
+            cropType: $cropType,
+            profileVM: profileVM,
+            showFullCoverImage: $showFullCoverImage,
+            showFullProfileImage: $showFullProfileImage
+        ))
+        .modifier(FullScreenImageViewers(
+            showFullCoverImage: $showFullCoverImage,
+            showFullProfileImage: $showFullProfileImage,
+            profileVM: profileVM
+        ))
+        .modifier(PhotoPickersModifier(profileVM: profileVM))
+        .modifier(CropHandlers(
+            profileVM: profileVM,
+            cropType: $cropType,
+            cropItem: $cropItem
+        ))
+    }
+    
+    // MARK: - View Modifiers
+    
+    struct ProfileChangeHandlers: ViewModifier {
+        @ObservedObject var profileVM: ProfileViewModel
+        @Binding var disableDragAnimation: Bool
         
-        // Generic confirmation dialog for cover/profile actions
-        .confirmationDialog(
-            "Options",
-            isPresented: $showEditDialog,
-            titleVisibility: .visible
-        ) {
-            if cropType == .cover {
-                Button("Change Picture") { profileVM.showCoverPicker = true }
-                Button("View Picture") { showFullCoverImage = true }
-            }
-            
-            if cropType == .profile {
-                Button("Change Picture") { profileVM.showProfilePicker = true }
-                Button("View Picture") { showFullProfileImage = true }
-            }
-            
-            Button("Cancel", role: .cancel) {}
-        }
-        
-        // Fullscreen cover image viewer
-        .fullScreenCover(isPresented: $showFullCoverImage) {
-            ZStack {
-                Color.black.ignoresSafeArea()
-                
-                if let coverURL = profileVM.profile?.coverPhotoURL,
-                   let url = URL(string: coverURL) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView().tint(.white)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .id(url) // ensure refresh when url changes
-                                .onTapGesture { showFullCoverImage = false }
-                        case .failure:
-                            Text("Failed to load image")
-                                .foregroundStyle(.white)
-                        @unknown default:
-                            EmptyView()
-                        }
+        func body(content: Content) -> some View {
+            content
+                .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
+                    disableDragAnimation = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        disableDragAnimation = false
                     }
-                } else {
-                    Text("No Cover Photo")
-                        .foregroundStyle(.white)
                 }
-                
-                // Close button (top-left)
-                VStack {
-                    HStack {
-                        Button {
-                            showFullCoverImage = false
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(.white.opacity(0.9))
-                                .padding(20)
-                        }
-                        Spacer()
-                    }
-                    Spacer()
-                }
-            }
         }
+    }
+    
+    struct ProfileAppearModifier: ViewModifier {
+        @ObservedObject var profileVM: ProfileViewModel
+        @Binding var currentOffset: CGFloat
         
-        // Fullscreen profile image viewer (1:1 square with black bars top/bottom and dismiss button)
-        .fullScreenCover(isPresented: $showFullProfileImage) {
-            ZStack {
-                Color.black.ignoresSafeArea()
-                
-                if let profileURL = profileVM.profile?.photoURL,
-                   let url = URL(string: profileURL) {
-                    GeometryReader { geo in
-                        let side = min(geo.size.width, geo.size.height)
-                        VStack {
-                            Spacer()
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView().tint(.white)
-                                        .frame(width: side, height: side)
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: side, height: side) // 1:1 square visual
-                                        .background(Color.black)
-                                        .onTapGesture { showFullProfileImage = false }
-                                case .failure:
-                                    Text("Failed to load image")
-                                        .foregroundStyle(.white)
-                                        .frame(width: side, height: side)
-                                @unknown default:
-                                    EmptyView()
-                                }
+        func body(content: Content) -> some View {
+            content
+                .onAppear {
+                    Task { await profileVM.loadCurrentUserProfile() }
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.05)) {
+                        currentOffset = UIScreen.main.bounds.height * 0.25
+                    }
+                }
+        }
+    }
+    
+    struct EditDialogModifier: ViewModifier {
+        @Binding var showEditDialog: Bool
+        @Binding var cropType: ImageEditType?
+        @ObservedObject var profileVM: ProfileViewModel
+        @Binding var showFullCoverImage: Bool
+        @Binding var showFullProfileImage: Bool
+        
+        func body(content: Content) -> some View {
+            content
+                .confirmationDialog(
+                    "Options",
+                    isPresented: $showEditDialog,
+                    titleVisibility: .visible
+                ) {
+                    if cropType == .cover {
+                        Button("Change Picture") { profileVM.showCoverPicker = true }
+                        Button("View Picture") { showFullCoverImage = true }
+                    }
+                    
+                    if cropType == .profile {
+                        Button("Change Picture") { profileVM.showProfilePicker = true }
+                        Button("View Picture") { showFullProfileImage = true }
+                    }
+                    
+                    Button("Cancel", role: .cancel) {}
+                }
+        }
+    }
+    
+    struct FullScreenImageViewers: ViewModifier {
+        @Binding var showFullCoverImage: Bool
+        @Binding var showFullProfileImage: Bool
+        @ObservedObject var profileVM: ProfileViewModel
+        
+        func body(content: Content) -> some View {
+            content
+                .fullScreenCover(isPresented: $showFullCoverImage) {
+                    CoverImageViewer(
+                        showFullCoverImage: $showFullCoverImage,
+                        coverURL: profileVM.profile?.coverPhotoURL
+                    )
+                }
+                .fullScreenCover(isPresented: $showFullProfileImage) {
+                    ProfileImageViewer(
+                        showFullProfileImage: $showFullProfileImage,
+                        profileURL: profileVM.profile?.photoURL
+                    )
+                }
+        }
+    }
+    
+    struct PhotoPickersModifier: ViewModifier {
+        @ObservedObject var profileVM: ProfileViewModel
+        
+        func body(content: Content) -> some View {
+            content
+                .photosPicker(isPresented: $profileVM.showCoverPicker,
+                              selection: $profileVM.selectedCoverItem,
+                              matching: .images)
+                .photosPicker(isPresented: $profileVM.showProfilePicker,
+                              selection: $profileVM.selectedProfileItem,
+                              matching: .images)
+        }
+    }
+    
+    struct CropHandlers: ViewModifier {
+        @ObservedObject var profileVM: ProfileViewModel
+        @Binding var cropType: ImageEditType?
+        @Binding var cropItem: CropImageItem?
+        
+        func body(content: Content) -> some View {
+            content
+                .onChange(of: profileVM.tempCoverImageData) { _, newValue in
+                    guard let data = newValue,
+                          let img = UIImage(data: data) else { return }
+                    
+                    cropType = .cover
+                    cropItem = CropImageItem(image: img)
+                }
+                .onChange(of: profileVM.tempProfileImageData) { _, newValue in
+                    guard let data = newValue,
+                          let img = UIImage(data: data) else { return }
+                    
+                    cropType = .profile
+                    cropItem = CropImageItem(image: img)
+                }
+                .fullScreenCover(item: $cropItem) { item in
+                    GenericCropView(
+                        originalImage: item.image,
+                        aspect: cropType == .profile ? .square : .portraitScreen
+                    ) { cropped in
+                        if let data = cropped.jpegData(compressionQuality: 0.9) {
+                            switch cropType {
+                            case .cover:
+                                Task { await profileVM.uploadImage(data, type: .cover) }
+                            case .profile:
+                                Task { await profileVM.uploadImage(data, type: .profile) }
+                            case .none:
+                                break
                             }
-                            Spacer()
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                } else {
-                    Text("No Profile Photo")
-                        .foregroundStyle(.white)
-                }
-                
-                // Close button
-                VStack {
-                    HStack {
-                        Button {
-                            showFullProfileImage = false
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(.white.opacity(0.9))
-                                .padding(20)
-                        }
-                        Spacer()
-                    }
-                    Spacer()
-                }
-            }
-        }
-        
-        // Attach both PhotosPickers at root so they can appear from anywhere
-        .photosPicker(isPresented: $profileVM.showCoverPicker,
-                      selection: $profileVM.selectedCoverItem,
-                      matching: .images)
-        .photosPicker(isPresented: $profileVM.showProfilePicker,
-                      selection: $profileVM.selectedProfileItem,
-                      matching: .images)
-        
-        // Handle cover selection -> set cropType + cropItem
-        .onChange(of: profileVM.tempCoverImageData) { _, newValue in
-            guard let data = newValue,
-                  let img = UIImage(data: data) else { return }
-            
-            cropType = .cover
-            cropItem = CropImageItem(image: img)
-        }
-        
-        // Handle profile selection -> set cropType + cropItem
-        .onChange(of: profileVM.tempProfileImageData) { _, newValue in
-            guard let data = newValue,
-                  let img = UIImage(data: data) else { return }
-            
-            cropType = .profile
-            cropItem = CropImageItem(image: img)
-        }
-        
-        // Cropper fullScreenCover
-        .fullScreenCover(item: $cropItem) { item in
-            GenericCropView(
-                originalImage: item.image,
-                aspect: cropType == .profile ? .square : .portraitScreen
-            ) { cropped in
-                // single crop completion: upload based on cropType
-                if let data = cropped.jpegData(compressionQuality: 0.9) {
-                    switch cropType {
-                    case .cover:
-                        Task { await profileVM.uploadCoverPhoto(imageData: data) }
-                    case .profile:
-                        Task { await profileVM.uploadProfilePhoto(imageData: data) }
-                    case .none:
-                        break
+                        
+                        cropItem = nil
+                        cropType = nil
+                        profileVM.tempCoverImageData = nil
+                        profileVM.tempProfileImageData = nil
                     }
                 }
-                
-                // reset states
-                cropItem = nil
-                cropType = nil
-                profileVM.tempCoverImageData = nil
-                profileVM.tempProfileImageData = nil
-            }
         }
     }
     
@@ -474,16 +449,3 @@ enum ImageEditType: Identifiable {
         }
     }
 }
-
-//// MARK: - Preview
-//#if DEBUG
-//struct ProfileView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        ProfileView()
-//            .environmentObject(AuthViewModel.sample)
-//            .environmentObject(TabRouter())
-//            .environmentObject(ProfileViewModel.sample)
-//            .previewDevice("iPhone 14")
-//    }
-//}
-//#endif
