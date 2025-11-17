@@ -16,6 +16,8 @@ struct ProfileView: View {
     @EnvironmentObject var tabRouter: TabRouter
     @EnvironmentObject var profileVM: ProfileViewModel
     @EnvironmentObject var router: Router
+    @StateObject private var cvm: CarouselViewModel
+    
     
     // MARK: - UI State
     @State private var activeEditType: ImageEditType?
@@ -36,6 +38,12 @@ struct ProfileView: View {
     private let topLimit: CGFloat = UIScreen.main.bounds.height * 0.1
     private let bottomLimit: CGFloat = UIScreen.main.bounds.height * 0.5
     private let profileImageSize: CGFloat = 100
+    
+    
+    init() {
+        let vm = CarouselViewModel()
+        _cvm = StateObject(wrappedValue: vm)
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -376,38 +384,51 @@ struct ProfileView: View {
     // MARK: - Blurred List Content
     private var blurredListView: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 20) {
-                Text(vm.username)
+            VStack(spacing: 16) {
+                
+                // USERNAME (always shown)
+                Text(profileVM.profile?.username_lowercase ?? "")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                profileDetailRow(label: "Bio", value: profileVM.profile?.bio, showTitle: false)
                 
-                if let email = Auth.auth().currentUser?.email {
-                    Text(email)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
+                CarouselView(vm: cvm)
+                    .frame(height: 150)
+                    .padding(.bottom, 8)
+                    .padding(.horizontal, 0)
+                // EMAIL
+                //                if let email = Auth.auth().currentUser?.email {
+                //                    Text(email)
+                //                        .font(.subheadline)
+                //                        .foregroundColor(.gray)
+                //                }
                 
-                Divider().background(Color.white.opacity(0.3))
+//                Divider().background(Color.white.opacity(0.3))
                 
-                VStack(spacing: 12) {
-                    HStack {
-                        Text("Joined")
-                        Spacer()
-                        Text("January 2024")
-                    }
-                    .foregroundColor(.white.opacity(0.8))
+                // PROFILE DETAILS LIST
+                VStack(alignment: .leading, spacing: 12) {
                     
-                    HStack {
-                        Text("Account Type")
-                        Spacer()
-                        Text("Standard")
-                    }
-                    .foregroundColor(.white.opacity(0.8))
+                    profileDetailRow(label: "Name", value: profileVM.profile?.displayName, showTitle: false)
+                    
+                    profileDetailRow(label: "Age", value: profileVM.profile?.age, showTitle: true)
+                    profileDetailRow(label: "Profession", value: profileVM.profile?.profession, showTitle: true)
+                    profileDetailRow(label: "Location", value: profileVM.profile?.location, showTitle: false)
+                    
                 }
-                .padding(.horizontal)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+                .background(
+                    CustomBlurView(style: .regular, intensity: 0.95)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                )
+                
+     
+                .padding(.horizontal, 8)
                 
                 Divider().background(Color.white.opacity(0.3))
                 
+                // LOGOUT BUTTON
                 Button(role: .destructive) {
                     vm.signOut()
                 } label: {
@@ -420,6 +441,7 @@ struct ProfileView: View {
                 }
                 .padding(.horizontal)
                 
+                // DELETE ACCOUNT
                 Button {
                     Task {
                         do { try await vm.deleteUserAccount() }
@@ -432,7 +454,24 @@ struct ProfileView: View {
                 }
                 .padding(.bottom, 40)
             }
-            .padding(.top, profileImageSize / 2)
+            .padding(.top)
+        }
+    }
+    
+    
+    @ViewBuilder
+    private func profileDetailRow(label: String, value: String?, showTitle: Bool) -> some View {
+        if let value = value, !value.trimmingCharacters(in: .whitespaces).isEmpty {
+            HStack {
+                if showTitle {
+                    Text("\(label):")
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.trailing, 8)
+                }
+                
+                Text(value)
+                    .foregroundStyle(.white)
+            }
         }
     }
 }
