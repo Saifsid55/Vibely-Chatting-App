@@ -36,12 +36,13 @@ struct MainTabView: View {
                     switch tabRouter.selectedTab {
                     case .home:
                         HomeView()
-//                            .onAppear { tabRouter.isTabBarVisible = true }
+
                     case .chat:
                         EmptyView()
                         
                     case .profile:
                         ProfileView()
+                            .id(tabRouter.selectedTab)
                     }
                 }
                 .navigationDestination(for: Route.self) { route in
@@ -49,27 +50,18 @@ struct MainTabView: View {
                     case .chat(let chat):
                         ChatDetailView(chat: chat, allUsers: viewModel.allUsersDict)
                         
-//                            .onAppear {
-//                                withAnimation(.easeInOut(duration: 0.3)) {
-//                                    tabRouter.isTabBarVisible = false
-//                                }
-//                            } // 👈 hide tab bar
-//                            .onDisappear {
-//                                withAnimation(.easeInOut(duration: 0.3)) {
-//                                    tabRouter.isTabBarVisible = true
-//                                }
-//                            } // 👈 show again
                     case .profile:
                         ProfileView()
+                        
                     }
                 }
             }
             .onChange(of: router.path) { oldValue, newValue in
-                          // Show tab bar only when navigation stack is empty
-                          withAnimation(.easeInOut(duration: 0.3)) {
-                              tabRouter.isTabBarVisible = newValue.isEmpty
-                          }
-                      }
+                // Show tab bar only when navigation stack is empty
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    tabRouter.isTabBarVisible = newValue.isEmpty
+                }
+            }
             // Tab bar overlay
             if tabRouter.isTabBarVisible {
                 CustomTabBarView(selectedTab: $tabRouter.selectedTab, animation: animation)
@@ -77,6 +69,11 @@ struct MainTabView: View {
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .animation(.spring(response: 0.4, dampingFraction: 0.8), value: tabRouter.isTabBarVisible)
+            }
+        }
+        .onChange(of: tabRouter.selectedTab) { oldTab, newTab in
+            if oldTab == .profile && newTab != .profile {
+                NotificationCenter.default.post(name: .profileTabDidDisappear, object: nil)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .didLogout)) { _ in
@@ -160,7 +157,7 @@ struct CustomTabBarView: View {
                     }
                 }
             )
-            .foregroundStyle(selectedTab == tab ? .white : .gray)
+            .foregroundStyle(selectedTab == tab ? .white : Color(hex: "#243949").opacity(0.8))
         }
     }
 }
