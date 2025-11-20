@@ -11,12 +11,14 @@ enum TabBarItem: String, CaseIterable {
     case home = "house.fill"
     case chat = "message.fill"
     case profile = "person.fill"
+    case profileTwo = "chevron.up"
     
     var title: String {
         switch self {
         case .home: return "Home"
         case .chat: return "Chats"
         case .profile: return "Profile"
+        case .profileTwo: return "ProfileTwo"
         }
     }
 }
@@ -36,11 +38,14 @@ struct MainTabView: View {
                     switch tabRouter.selectedTab {
                     case .home:
                         HomeView()
-
+                        //                            .onAppear { tabRouter.isTabBarVisible = true }
                     case .chat:
                         EmptyView()
                         
                     case .profile:
+                        NewProfileView()
+                            .id(tabRouter.selectedTab)
+                    case .profileTwo:
                         ProfileView()
                             .id(tabRouter.selectedTab)
                     }
@@ -51,8 +56,8 @@ struct MainTabView: View {
                         ChatDetailView(chat: chat, allUsers: viewModel.allUsersDict)
                         
                     case .profile:
-                        ProfileView()
-                        
+                        NewProfileView()
+                            .id(tabRouter.selectedTab)
                     }
                 }
             }
