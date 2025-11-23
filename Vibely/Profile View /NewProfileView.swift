@@ -50,7 +50,22 @@ struct NewProfileView: View {
             coverImage
             CustomBlurView(style: .systemUltraThinMaterialDark, intensity: blurIntensity)
                 .ignoresSafeArea()
-            
+            CustomBlurView(style: .systemChromeMaterialDark, intensity: 1.0)
+                .mask(
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .black.opacity(0.0), location: 0.0),   // No blur at top
+                            .init(color: .black.opacity(0.0), location: 0.40),
+                            .init(color: .black.opacity(0.4), location: 0.50),
+                            .init(color: .black.opacity(1.0), location: 0.75),  // Mid blur
+                            .init(color: .black.opacity(1.0), location: 1.0),   // Full blur bottom
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
             draggableSheetLayer
             
         }
@@ -80,6 +95,19 @@ struct NewProfileView: View {
                 .environmentObject(profileVM)
         }
         
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                if tabRouter.selectedTab == .profile && tabRouter.allowCollapse {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                        tabRouter.isTabBarCollapsed = true
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            // restore allowCollapse so other flows behave normally
+            tabRouter.allowCollapse = true
+        }
     }
     
     var coverImage: some View {
@@ -134,20 +162,24 @@ struct NewProfileView: View {
                 .background(Color.clear)
             
         }
-        .background {
-            LinearGradient(
-                gradient: Gradient(stops: [
-                    .init(color: Color.white.opacity(0.0), location: 0.0),   // Top
-                    .init(color: Color.white.opacity(0.0), location: 0.20),  // 5% from top
-                    .init(color: Color.white.opacity(0.8), location: 0.3),   // Middle
-                    .init(color: Color.white.opacity(1.0), location: 1.0),   // Bottom
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .blur(radius: 100)
-            .ignoresSafeArea()
-        }
+//        .background {
+//            Rectangle()
+//                .fill(.ultraThinMaterial)          // Actual blur layer
+//                .blur(radius: 40)
+//                .mask(
+//                    LinearGradient(
+//                        gradient: Gradient(stops: [
+//                            .init(color: Color.black.opacity(0.0), location: 0.0),   // Top
+//                            .init(color: Color.black.opacity(0.8), location: 0.15),   // Middle
+//                            .init(color: Color.black.opacity(1.0), location: 1.0),   // Bottom
+//                        ]),
+//                        startPoint: .top,
+//                        endPoint: .bottom
+//                    )
+//                )
+////                .opacity(pow(-blurIntensity, 1.4))
+//                .ignoresSafeArea()
+//        }
         .clipShape(RoundedRectangle(cornerRadius: 30))
         .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
         .shadow(radius: 10 + abs(dragTranslation) / 20)
@@ -189,7 +221,6 @@ struct NewProfileView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 profileDetailRow(label: "Name", value: profileVM.profile?.displayName, showTitle: false, showIcon: false)
-                //                        .padding(.leading, 24)
                     .font(.title)
                     .fontWeight(.bold)
                 profileDetailRow(label: "Bio", value: profileVM.profile?.bio, showTitle: false, showIcon: false)
@@ -210,7 +241,6 @@ struct NewProfileView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.white)
                     .padding(.leading, 24)
-                
                 
                 VStack(alignment: .leading, spacing: 8) {
                     profileDetailRow(label: "Age", value: profileVM.profile?.age, showTitle: true, showIcon: false)
@@ -264,7 +294,6 @@ struct NewProfileView: View {
             .frame(width: profileImageSize, height: profileImageSize)
             .overlay(Circle().stroke(Color.white, lineWidth: 2))
     }
-    
     
     @ViewBuilder
     private func profileDetailRow(label: String, value: String?, showTitle: Bool, showIcon: Bool) -> some View {
