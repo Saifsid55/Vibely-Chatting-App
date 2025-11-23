@@ -35,7 +35,7 @@ struct NewProfileView: View {
     
     
     private let topLimit: CGFloat = UIScreen.main.bounds.height * 0.1
-    private let bottomLimit: CGFloat = UIScreen.main.bounds.height * 0.7
+    private let bottomLimit: CGFloat = UIScreen.main.bounds.height * 0.55
     private let profileImageSize: CGFloat = 100
     
     
@@ -50,10 +50,36 @@ struct NewProfileView: View {
             coverImage
             CustomBlurView(style: .systemUltraThinMaterialDark, intensity: blurIntensity)
                 .ignoresSafeArea()
+            
             draggableSheetLayer
             
         }
+        .modifier(ProfileChangeHandlers(profileVM: profileVM, disableDragAnimation: $disableDragAnimation))
         .modifier(ProfileAppearModifier(profileVM: profileVM, currentOffset: $currentOffset))
+        .modifier(EditDialogModifier(
+            showEditDialog: $showEditDialog,
+            cropType: $cropType,
+            profileVM: profileVM,
+            showFullCoverImage: $showFullCoverImage,
+            showFullProfileImage: $showFullProfileImage
+        ))
+        .modifier(FullScreenImageViewers(
+            showFullCoverImage: $showFullCoverImage,
+            showFullProfileImage: $showFullProfileImage,
+            profileVM: profileVM
+        ))
+        .modifier(PhotoPickersModifier(profileVM: profileVM))
+        .modifier(CropHandlers(
+            profileVM: profileVM,
+            cropType: $cropType,
+            cropItem: $cropItem
+        ))
+        
+        .fullScreenCover(isPresented: $showEditProfileDetails) {
+            EditProfileDetailsView(profileVM: profileVM)
+                .environmentObject(profileVM)
+        }
+        
     }
     
     var coverImage: some View {
@@ -86,30 +112,43 @@ struct NewProfileView: View {
                     .clipped()
                     .ignoresSafeArea()
             }
+            
+            ProfileCoverEditButtons(
+                onEditProfileDetails: { showEditProfileDetails = true },
+                onEditCover: {
+                    cropType = .cover
+                    showEditDialog = true
+                }
+            )
         }
     }
     
     
     private var draggableSheetLayer: some View {
         VStack(alignment: .leading, spacing: 4) {
-            profileImageView
-                .frame(width: profileImageSize, height: profileImageSize)
-                .onTapGesture {
-                    cropType = .profile
-                    showEditDialog = true
-                }
-                .padding(.leading, 16)
-                .padding(.bottom, 8)
-            
-            profileDetailRow(label: "Name", value: profileVM.profile?.displayName, showTitle: false)
+            topProfileView
+                .padding(.top, 16)
+            HobbiesRow(hobbies: ["Gym", "Travel", "Cooking", "Music"])
                 .padding(.leading, 24)
-                .font(.title3)
-                .fontWeight(.semibold)
             blurredListView
-                .padding(.leading, 24)
                 .background(Color.clear)
             
         }
+        .background {
+            LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color.white.opacity(0.0), location: 0.0),   // Top
+                    .init(color: Color.white.opacity(0.0), location: 0.20),  // 5% from top
+                    .init(color: Color.white.opacity(0.8), location: 0.3),   // Middle
+                    .init(color: Color.white.opacity(1.0), location: 1.0),   // Bottom
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .blur(radius: 100)
+            .ignoresSafeArea()
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 30))
         .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
         .shadow(radius: 10 + abs(dragTranslation) / 20)
         .offset(y: max(topLimit, min(bottomLimit, currentOffset + dragTranslation)))
@@ -136,6 +175,32 @@ struct NewProfileView: View {
         )
     }
     
+    private var topProfileView: some View {
+        
+        HStack( spacing: 8) {
+            profileImageView
+                .frame(width: profileImageSize, height: profileImageSize)
+                .onTapGesture {
+                    cropType = .profile
+                    showEditDialog = true
+                }
+                .padding(.leading, 16)
+                .padding(.bottom, 8)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                profileDetailRow(label: "Name", value: profileVM.profile?.displayName, showTitle: false, showIcon: false)
+                //                        .padding(.leading, 24)
+                    .font(.title)
+                    .fontWeight(.bold)
+                profileDetailRow(label: "Bio", value: profileVM.profile?.bio, showTitle: false, showIcon: false)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+            }
+            .padding(.horizontal, 16)
+        }
+        
+    }
+    
     private var blurredListView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 8) {
@@ -144,19 +209,20 @@ struct NewProfileView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.white)
+                    .padding(.leading, 24)
                 
-                profileDetailRow(label: "Bio", value: profileVM.profile?.bio, showTitle: false)
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    profileDetailRow(label: "Age", value: profileVM.profile?.age, showTitle: true)
-                    profileDetailRow(label: "Profession", value: profileVM.profile?.profession, showTitle: true)
-                    profileDetailRow(label: "Location", value: profileVM.profile?.location, showTitle: false)
+                    profileDetailRow(label: "Age", value: profileVM.profile?.age, showTitle: true, showIcon: false)
+                    profileDetailRow(label: "Profession", value: profileVM.profile?.profession, showTitle: true, showIcon: false)
+                    profileDetailRow(label: "Location", value: "Lucknow, Uttar Pradesh", showTitle: true, showIcon: false)
                 }
+                .padding(.leading, 24)
+                
                 CarouselView(vm: cvm)
                     .frame(height: 150)
                     .padding(.top, 16)
             }
-            //            .padding(.top, -4)
         }
     }
     
@@ -201,7 +267,7 @@ struct NewProfileView: View {
     
     
     @ViewBuilder
-    private func profileDetailRow(label: String, value: String?, showTitle: Bool) -> some View {
+    private func profileDetailRow(label: String, value: String?, showTitle: Bool, showIcon: Bool) -> some View {
         if let value = value, !value.trimmingCharacters(in: .whitespaces).isEmpty {
             HStack {
                 if showTitle {
@@ -229,7 +295,7 @@ struct NewProfileView: View {
                     
                     // Move sheet from 100% (hidden) → 90% (show 10%)
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        currentOffset = UIScreen.main.bounds.height * 0.7
+                        currentOffset = UIScreen.main.bounds.height * 0.55
                     }
                 }
         }
@@ -241,6 +307,4 @@ struct NewProfileView: View {
         let current = (bottomLimit - (currentOffset + dragTranslation)) / range
         return max(0, min(1, current))  // clamp
     }
-    
 }
-

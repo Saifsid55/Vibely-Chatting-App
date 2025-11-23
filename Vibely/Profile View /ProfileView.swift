@@ -80,21 +80,6 @@ struct ProfileView: View {
     
     // MARK: - View Modifiers
     
-    struct ProfileChangeHandlers: ViewModifier {
-        @ObservedObject var profileVM: ProfileViewModel
-        @Binding var disableDragAnimation: Bool
-        
-        func body(content: Content) -> some View {
-            content
-                .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
-                    disableDragAnimation = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                        disableDragAnimation = false
-                    }
-                }
-        }
-    }
-    
     struct ProfileAppearModifier: ViewModifier {
         @ObservedObject var profileVM: ProfileViewModel
         @Binding var currentOffset: CGFloat
@@ -464,6 +449,21 @@ struct FullScreenImageViewers: ViewModifier {
                     showFullProfileImage: $showFullProfileImage,
                     profileURL: profileVM.profile?.photoURL
                 )
+            }
+    }
+}
+
+struct ProfileChangeHandlers: ViewModifier {
+    @ObservedObject var profileVM: ProfileViewModel
+    @Binding var disableDragAnimation: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: profileVM.profile?.coverPhotoURL) { _, _ in
+                disableDragAnimation = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    disableDragAnimation = false
+                }
             }
     }
 }

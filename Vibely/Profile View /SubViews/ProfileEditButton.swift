@@ -15,12 +15,16 @@ struct ProfileCoverEditButtons: View {
         HStack {
             // LEFT — Edit Profile Details
             Button(action: onEditProfileDetails) {
-                Image(systemName: "pencil.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Color.black.opacity(0.4))
-                    .clipShape(Circle())
+                Text("Edit Profile")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background {
+                        CustomBlurView(style: .prominent, intensity: 1.0)
+                    }
+                    .clipShape(Capsule())
+                    .foregroundStyle(.black)
             }
             .padding(.leading, 16)
             
