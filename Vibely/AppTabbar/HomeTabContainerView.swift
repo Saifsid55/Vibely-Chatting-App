@@ -126,10 +126,10 @@ struct CustomTabBarView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(
+        .background{
             BlurView(style: .systemUltraThinMaterialLight)
                 .opacity(0.95)
-                .background(
+                .background{
                     LinearGradient(
                         colors: [
                             Color.white.opacity(0.25),
@@ -138,10 +138,10 @@ struct CustomTabBarView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                )
+                }
                 .clipShape(Capsule())
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        )
+        }
     }
     
     // MARK: Profile Tab Bar (collapsible with arrow inside)
@@ -176,7 +176,7 @@ struct CustomTabBarView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .clipShape(Capsule())
+                .clipShape(tabRouter.isTabBarCollapsed ? AnyShape(Circle()) : AnyShape(Capsule()))
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         )
     }
@@ -200,10 +200,10 @@ struct CustomTabBarView: View {
                 .frame(width: 20, height: 20)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
-                .background(
+                .background{
                     Circle()
                         .fill(Color.white.opacity(0.3))
-                )
+                }
         }
     }
     
