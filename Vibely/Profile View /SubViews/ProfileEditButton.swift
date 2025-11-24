@@ -32,14 +32,23 @@ struct ProfileCoverEditButtons: View {
             
             // RIGHT — Edit Cover Photo
             Button(action: onEditCover) {
-                Image(systemName: "square.and.pencil")
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Color.black.opacity(0.4))
-                    .clipShape(Circle())
+                ZStack {
+                    Asset.editImage.swiftUIImage
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                        .foregroundStyle(.black)
+                        .padding(4)    // internal space for icon
+                }
+                .frame(width: 32, height: 32)   // perfect circle size
+                .background {
+                    CustomBlurView(style: .prominent, intensity: 1.0)
+                }
+                .clipShape(Circle())
             }
             .padding(.trailing, 16)
         }
-        .padding(.top, 40)
+        .padding(.top, 32)
     }
 }

@@ -96,7 +96,7 @@ struct NewProfileView: View {
         }
         
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.40) {
                 if tabRouter.selectedTab == .profile && tabRouter.allowCollapse {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                         tabRouter.isTabBarCollapsed = true
@@ -161,24 +161,6 @@ struct NewProfileView: View {
                 .background(Color.clear)
             
         }
-//        .background {
-//            Rectangle()
-//                .fill(.ultraThinMaterial)          // Actual blur layer
-//                .blur(radius: 40)
-//                .mask(
-//                    LinearGradient(
-//                        gradient: Gradient(stops: [
-//                            .init(color: Color.black.opacity(0.0), location: 0.0),   // Top
-//                            .init(color: Color.black.opacity(0.8), location: 0.15),   // Middle
-//                            .init(color: Color.black.opacity(1.0), location: 1.0),   // Bottom
-//                        ]),
-//                        startPoint: .top,
-//                        endPoint: .bottom
-//                    )
-//                )
-////                .opacity(pow(-blurIntensity, 1.4))
-//                .ignoresSafeArea()
-//        }
         .clipShape(RoundedRectangle(cornerRadius: 30))
         .scaleEffect(dragTranslation == 0 ? 1.0 : 1 - (abs(dragTranslation) / 2000))
         .shadow(radius: 10 + abs(dragTranslation) / 20)
