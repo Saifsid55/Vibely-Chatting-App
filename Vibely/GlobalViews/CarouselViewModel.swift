@@ -14,7 +14,8 @@ final class CarouselViewModel: ObservableObject {
     @Published var phoneNumber: String = ""
     @Published var containerOffset: CGFloat = 0
     @Published var dragTranslation: CGFloat = 0
-    
+    @Published var isUserDragging: Bool = false
+
     private var timer: AnyCancellable?
     private let autoScrollInterval: TimeInterval = 2.0
     

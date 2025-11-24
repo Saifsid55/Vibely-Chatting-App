@@ -93,19 +93,35 @@ extension Color {
 
 extension Gradient.Stop {
     init(hex: String, location: CGFloat) {
-        self.init(color: Color(hex: hex) ?? .clear, location: location)
+        self.init(color: Color(hex: hex), location: location)
     }
 }
-
 
 extension View {
     func hapticFeedback(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) -> some View {
-        self.onTapGesture {
-            let generator = UIImpactFeedbackGenerator(style: style)
-            generator.impactOccurred()
-        }
+        self.onAppear {} // keeps the method chained
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    let generator = UIImpactFeedbackGenerator(style: style)
+                    generator.prepare()
+                    generator.impactOccurred()
+                }
+            )
     }
 }
+
+extension Button {
+    func haptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) -> some View {
+        self.simultaneousGesture(
+            TapGesture().onEnded {
+                let generator = UIImpactFeedbackGenerator(style: style)
+                generator.prepare()
+                generator.impactOccurred()
+            }
+        )
+    }
+}
+
 
 struct ScrollOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0

@@ -46,6 +46,7 @@ struct CarouselView: View {
             .gesture(
                 DragGesture()
                     .onChanged { value in
+                        vm.isUserDragging = true
                         vm.updateDragTranslation(value.translation.width)
                         vm.handleDragChanged()
                     }
@@ -54,11 +55,22 @@ struct CarouselView: View {
                             predictedTranslation: value.predictedEndTranslation.width,
                             perItemWidth: perItemWidth
                         )
-                        // Reset drag translation
+                        
                         vm.updateDragTranslation(0)
+                        
+                        // Delay resetting, so index change triggers while dragging = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                            vm.isUserDragging = false
+                        }
                     }
             )
             .frame(height: geo.size.height)
+        }
+        .onChange(of: vm.currentIndex) { oldValue, newValue in
+            if vm.isUserDragging {
+                let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.impactOccurred()
+            }
         }
         .frame(minHeight: 120, idealHeight: defaultHeight, maxHeight: .infinity)
     }
@@ -68,10 +80,6 @@ struct CarouselView: View {
 // MARK: - Individual Item View
 struct CarouselItemView: View {
     let imageURL: URL?
-    
-    init(imageURL: URL? = nil) {
-        self.imageURL = imageURL
-    }
     
     var body: some View {
         if let url = imageURL {
@@ -107,6 +115,7 @@ struct CarouselItemView: View {
     }
 }
 
+
 // MARK: - Page Control (dots)
 struct PageControl: View {
     let pages: Int
@@ -117,7 +126,8 @@ struct PageControl: View {
             ForEach(0..<pages, id: \.self) { i in
                 Circle()
                     .foregroundStyle(.gray)
-                    .frame(width: i == currentIndex ? 10 : 7, height: i == currentIndex ? 10 : 7)
+                    .frame(width: i == currentIndex ? 10 : 7,
+                           height: i == currentIndex ? 10 : 7)
                     .opacity(i == currentIndex ? 1 : 0.45)
             }
         }

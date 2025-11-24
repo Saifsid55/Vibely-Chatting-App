@@ -186,7 +186,8 @@ struct CustomTabBarView: View {
         Button {
             let generator = UISelectionFeedbackGenerator()
             generator.selectionChanged()
-            
+            let haptic = UIImpactFeedbackGenerator(style: .light)
+            haptic.impactOccurred()
             withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                 tabRouter.isTabBarCollapsed.toggle()
             }
