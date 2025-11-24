@@ -126,7 +126,7 @@ struct CustomTabBarView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background{
+        .background {
             BlurView(style: .systemUltraThinMaterialLight)
                 .opacity(0.95)
                 .background{
@@ -157,7 +157,6 @@ struct CustomTabBarView: View {
                     removal: .move(edge: .trailing).combined(with: .opacity)
                 ))
             }
-            
             // Toggle button (always visible, inside the capsule)
             toggleButton
         }
@@ -236,7 +235,7 @@ struct CustomTabBarView: View {
             }
             .padding(.vertical, 8)
             .padding(.horizontal, selectedTab == tab ? 16 : 12)
-            .background(
+            .background {
                 ZStack {
                     if selectedTab == tab {
                         Capsule()
@@ -249,7 +248,7 @@ struct CustomTabBarView: View {
                             .matchedGeometryEffect(id: "activeTab", in: animation)
                     }
                 }
-            )
+            }
             .foregroundStyle(selectedTab == tab ? .white : Color(hex: "#243949").opacity(0.8))
         }
     }
