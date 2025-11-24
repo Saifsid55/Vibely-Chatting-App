@@ -96,7 +96,7 @@ struct NewProfileView: View {
         }
         
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) {
                 if tabRouter.selectedTab == .profile && tabRouter.allowCollapse {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                         tabRouter.isTabBarCollapsed = true
@@ -105,7 +105,6 @@ struct NewProfileView: View {
             }
         }
         .onDisappear {
-            // restore allowCollapse so other flows behave normally
             tabRouter.allowCollapse = true
         }
     }

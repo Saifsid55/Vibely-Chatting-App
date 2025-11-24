@@ -11,14 +11,14 @@ enum TabBarItem: String, CaseIterable {
     case home = "house.fill"
     case chat = "message.fill"
     case profile = "person.fill"
-    case profileTwo = "chevron.up"
+    //    case profileTwo = "chevron.up"
     
     var title: String {
         switch self {
         case .home: return "Home"
         case .chat: return "Chats"
         case .profile: return "Profile"
-        case .profileTwo: return "ProfileTwo"
+            //        case .profileTwo: return "ProfileTwo"
         }
     }
 }
@@ -43,9 +43,9 @@ struct MainTabView: View {
                     case .profile:
                         NewProfileView()
                             .id(tabRouter.selectedTab)
-                    case .profileTwo:
-                        ProfileView()
-                            .id(tabRouter.selectedTab)
+                        //                    case .profileTwo:
+                        //                        ProfileView()
+                        //                            .id(tabRouter.selectedTab)
                     }
                 }
                 .navigationDestination(for: Route.self) { route in
@@ -100,50 +100,25 @@ struct CustomTabBarView: View {
     
     @EnvironmentObject var tabRouter: TabRouter
     
-    // MARK: Use your icon from Assets.xcassets
-    private let collapseIconAssetName = "left-arrow"
-    
     var body: some View {
-        ZStack {
-            
-            // MARK: Collapsed State
-            if tabRouter.isTabBarCollapsed && selectedTab == .profile {
-                collapsedCircleButton
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        )
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                
+        HStack(spacing: 0) {
+            if selectedTab == .profile {
+                // Profile view with collapsible tab bar
+                profileTabBar
             } else {
-                
-                // MARK: Full Tab Bar
-                fullTabBar
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .leading).combined(with: .opacity),
-                            removal: .move(edge: .trailing).combined(with: .opacity)
-                        )
-                    )
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-                            tabRouter.isTabBarCollapsed = true
-                            tabRouter.allowCollapse = true
-                        }
-                    }
+                // Other views - centered tab bar
+                regularTabBar
             }
         }
+        .frame(maxWidth: .infinity, alignment: selectedTab == .profile ? .trailing : .center)
         .animation(
-            .spring(response: 0.48, dampingFraction: 0.85, blendDuration: 0.25),
+            .spring(response: 0.5, dampingFraction: 0.85),
             value: tabRouter.isTabBarCollapsed
         )
     }
     
-    
-    // MARK: Full Tab Bar UI (unchanged)
-    private var fullTabBar: some View {
+    // MARK: Regular Tab Bar (for home, chat - centered)
+    private var regularTabBar: some View {
         HStack(spacing: 12) {
             ForEach(TabBarItem.allCases, id: \.self) { tab in
                 tabButton(for: tab)
@@ -167,45 +142,71 @@ struct CustomTabBarView: View {
                 .clipShape(Capsule())
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         )
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: selectedTab)
     }
     
-    
-    // MARK: Collapsed Floating Circle
-    private var collapsedCircleButton: some View {
-        Button {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-                tabRouter.isTabBarCollapsed = false
-                tabRouter.allowCollapse = false
+    // MARK: Profile Tab Bar (collapsible with arrow inside)
+    private var profileTabBar: some View {
+        HStack(spacing: 12) {
+            // Collapsible tab content
+            if !tabRouter.isTabBarCollapsed {
+                ForEach(TabBarItem.allCases, id: \.self) { tab in
+                    tabButton(for: tab)
+                }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
             }
             
+            // Toggle button (always visible, inside the capsule)
+            toggleButton
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(
+            BlurView(style: .systemUltraThinMaterialLight)
+                .opacity(0.95)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.25),
+                            Color.blue.opacity(0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Capsule())
+                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    // MARK: Toggle Button (rotates in place, styled to match tab bar)
+    private var toggleButton: some View {
+        Button {
             let generator = UISelectionFeedbackGenerator()
             generator.selectionChanged()
             
-        } label: {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                tabRouter.isTabBarCollapsed.toggle()
+            }
             
-            Image(collapseIconAssetName)     // <— USE ASSET HERE
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 22, height: 22)
-                .padding(18)
-                .background{
-                    ZStack {
-                        CustomBlurView(style: .systemChromeMaterialDark, intensity: 1.0)
-                            .clipShape(Circle())
-                        
-                        Circle()
-                            .fill(Color.white.opacity(0.08)) // optional subtle tint
-                    }
-                }
-                .shadow(radius: 10)
+        } label: {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color(hex: "#243949").opacity(0.8))
+                .rotationEffect(.degrees(tabRouter.isTabBarCollapsed ? 180 : 0))
+                .frame(width: 20, height: 20)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(0.3))
+                )
         }
-        .padding(.trailing, 18)
-        .padding(.bottom, 18)
     }
     
-    
-    // MARK: Tab Buttons (unchanged)
+    // MARK: Tab Buttons
     @ViewBuilder
     private func tabButton(for tab: TabBarItem) -> some View {
         Button {
