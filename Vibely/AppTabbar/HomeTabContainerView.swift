@@ -162,7 +162,7 @@ struct CustomTabBarView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(
+        .background {
             BlurView(style: .systemUltraThinMaterialLight)
                 .opacity(0.95)
                 .background(
@@ -177,7 +177,7 @@ struct CustomTabBarView: View {
                 )
                 .clipShape(tabRouter.isTabBarCollapsed ? AnyShape(Circle()) : AnyShape(Capsule()))
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        )
+        }
     }
     
     // MARK: Toggle Button (rotates in place, styled to match tab bar)

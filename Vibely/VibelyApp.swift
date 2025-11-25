@@ -92,6 +92,7 @@ struct VibelyApp: App {
     @StateObject private var router = Router()             // ✅ Handles navigation stack
     @StateObject private var tabRouter = TabRouter()
     @StateObject private var profileVM = ProfileViewModel()
+    @StateObject private var mediaBarViewModel = MediaBarViewModel()
 
     
     var body: some Scene {
@@ -102,6 +103,7 @@ struct VibelyApp: App {
                 .environmentObject(router)
                 .environmentObject(tabRouter)
                 .environmentObject(profileVM)
+                .environmentObject(mediaBarViewModel)
                 .onReceive(NotificationCenter.default.publisher(for: .didLogout)) { _ in
                     resetAppState()
                 }
