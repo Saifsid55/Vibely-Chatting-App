@@ -222,7 +222,7 @@ struct NewProfileView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.white)
                     .padding(.leading, 24)
-                
+                MediaBar()
                 VStack(alignment: .leading, spacing: 8) {
                     profileDetailRow(label: "Age", value: profileVM.profile?.age, showTitle: true, showIcon: false)
                     profileDetailRow(label: "Profession", value: profileVM.profile?.profession, showTitle: true, showIcon: false)
