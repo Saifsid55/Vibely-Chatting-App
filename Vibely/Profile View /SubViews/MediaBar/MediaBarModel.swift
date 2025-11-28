@@ -82,7 +82,7 @@ enum MediaType: String, Codable {
 }
 
 struct MediaWrapper: Identifiable, Codable {
-    let id = UUID().uuidString
+    var id = UUID().uuidString
     let type: MediaType
     let spotify: SpotifySong?
     let youtube: YouTubeVideo?

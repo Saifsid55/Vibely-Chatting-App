@@ -11,23 +11,17 @@ import AVFoundation
 class MediaBarViewModel: ObservableObject {
     
     // MARK: - UI State
-    
     @Published var expandSpotify = false
     @Published var expandYouTube = false
-    @Published var spotifyRotation: Double = 0
-    @Published var youtubeRotation: Double = 0
     
     // MARK: - Selected Media
-    
-    @Published var spotifySong: SpotifySong? = nil       // Selected Spotify Song
-    @Published var youtubeVideo: YouTubeVideo? = nil     // Selected YouTube Video
+    @Published var spotifySong: SpotifySong? = nil
+    @Published var youtubeVideo: YouTubeVideo? = nil
     @Published var isPlaying = false
     
     private var player: AVPlayer?
     
-    
-    // MARK: - Mock Data (Remove Later)
-    
+    // MARK: - Mock Data
     let mockSpotify = SpotifySong(
         id: "12345",
         title: "Blinding Lights",
@@ -49,49 +43,20 @@ class MediaBarViewModel: ObservableObject {
         self.youtubeVideo = mockYouTube
     }
     
-    // MARK: - Adding Media
+    // MARK: - Toggle Logic (Pure State)
     
-    func addSpotifySong(_ song: SpotifySong) {
-        self.spotifySong = song
+    func toggleSpotify() {
+        expandSpotify.toggle()
+        if !expandSpotify {
+            pausePreview()
+        }
     }
     
-    func addYouTubeVideo(_ video: YouTubeVideo) {
-        self.youtubeVideo = video
+    func toggleYouTube() {
+        expandYouTube.toggle()
     }
     
-    // MARK: - Clearing Media
-    
-    func clearSpotify() {
-        self.spotifySong = nil
-    }
-    
-    func clearYouTube() {
-        self.youtubeVideo = nil
-    }
-    
-    // MARK: - Expand / Collapse Logic
-    /*
-     func toggleSpotify() {
-     withAnimation {
-     expandSpotify.toggle()
-     if expandSpotify {
-     //                expandYouTube = false
-     } else {
-     pausePreview()
-     }
-     }
-     }
-     
-     func toggleYouTube() {
-     withAnimation {
-     expandYouTube.toggle()
-     if expandYouTube {
-     //                expandSpotify = false
-     pausePreview()
-     }
-     }
-     }
-     */
+    // MARK: - Audio Logic
     func playPreview(url: String?) {
         guard let urlString = url,
               let url = URL(string: urlString) else { return }
@@ -105,31 +70,4 @@ class MediaBarViewModel: ObservableObject {
         player?.pause()
         isPlaying = false
     }
-    
-    func toggleSpotify() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            if expandSpotify == false {
-                // expanding → rotate clockwise
-                spotifyRotation += 360
-            } else {
-                // collapsing → rotate anticlockwise
-                spotifyRotation -= 360
-            }
-            expandSpotify.toggle()
-        }
-    }
-    
-    func toggleYouTube() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            if expandYouTube == false {
-                // expanding → rotate clockwise
-                youtubeRotation += 360
-            } else {
-                // collapsing → rotate anticlockwise
-                youtubeRotation -= 360
-            }
-            expandYouTube.toggle()
-        }
-    }
-    
 }

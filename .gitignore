@@ -96,3 +96,14 @@ yarn-error.log*
 # Secrets
 Secrets.xcconfig
 
+
+##########################
+# InjectionNext / Hot Reload Tools
+##########################
+InjectionNext/
+injection/
+*.inject
+*.injection
+*.injected
+InjectionIII.app/
+
