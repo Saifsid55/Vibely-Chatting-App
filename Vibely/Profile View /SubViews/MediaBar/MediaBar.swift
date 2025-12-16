@@ -21,10 +21,13 @@ struct MediaBar: View {
         let spotifyWidth = vm.expandYouTube ? bothExpandedWidth : singleExpandedWidth
         let youtubeWidth  = vm.expandSpotify ? bothExpandedWidth : singleExpandedWidth
         
-        HStack(spacing: spacing) {
-            spotifyButton(width: spotifyWidth)
-            youtubeButton(width: youtubeWidth)
-        }
+            HStack(spacing: spacing) {
+                spotifyButton(width: spotifyWidth)
+                youtubeButton(width: youtubeWidth)
+            }
+            .blur(radius: vm.showMediaPopup ? 4 : 0)
+            .allowsHitTesting(!vm.showMediaPopup)
+        
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: vm.expandSpotify)
         .animation(.spring(response: 0.32, dampingFraction: 0.82), value: vm.expandYouTube)
         .onAppear { vm.loadMockData() }
@@ -53,7 +56,7 @@ extension MediaBar {
                        height: vm.expandSpotify ? 50 : 44)
                 .clipShape(Circle())
                 .rotationEffect(.degrees(vm.expandSpotify ? 360 : 0))
-                .animation(.spring(response: 0.5, dampingFraction: 0.75), value: vm.expandSpotify)
+                .animation(.spring(response: 0.6, dampingFraction: 0.75), value: vm.expandSpotify)
                 .onTapGesture {
                     HapticManager.shared.lightTap()
                     vm.toggleSpotify()
@@ -65,13 +68,21 @@ extension MediaBar {
                     SlidingText(text: song.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
-                    
+                        .background(
+                            Rectangle()
+                                .fill(Color.clear)
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            vm.openSpotifyPopup()
+                        }
+
                     Button(action: {
                         vm.isPlaying ? vm.pausePreview() : vm.playPreview(url: song.previewURL)
                     }) {
                         Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundColor(.black)
+                            . foregroundStyle(.black)
                     }
                     .padding(.trailing, 8)
                 }
@@ -101,7 +112,7 @@ extension MediaBar {
                        height: vm.expandYouTube ? 50 : 44)
                 .clipShape(Circle())
                 .rotationEffect(.degrees(vm.expandYouTube ? 360 : 0))
-                .animation(.spring(response: 0.5, dampingFraction: 0.75), value: vm.expandYouTube)
+                .animation(.spring(response: 0.6, dampingFraction: 0.75), value: vm.expandYouTube)
                 .onTapGesture {
                     HapticManager.shared.lightTap()
                     vm.toggleYouTube()
@@ -113,11 +124,13 @@ extension MediaBar {
                     SlidingText(text: video.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
+                        .background(
+                            Rectangle()
+                                .fill(Color.clear)
+                        )
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            //                            if let url = URL(string: video.externalURL) {
-                            //                                UIApplication.shared.open(url)
-                            //                            }
+                            vm.openYouTubePopup()
                         }
                     Button(action: {
                         if let url = URL(string: video.externalURL) {
@@ -126,7 +139,7 @@ extension MediaBar {
                     }) {
                         Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundColor(.black)
+                            . foregroundStyle(.black)
                     }
                     .padding(.trailing, 8)
                     

@@ -18,7 +18,9 @@ class MediaBarViewModel: ObservableObject {
     @Published var spotifySong: SpotifySong? = nil
     @Published var youtubeVideo: YouTubeVideo? = nil
     @Published var isPlaying = false
+    @Published var showMediaPopup: Bool = false
     
+    @Published var selectedMedia: MediaType?
     private var player: AVPlayer?
     
     // MARK: - Mock Data
@@ -69,5 +71,20 @@ class MediaBarViewModel: ObservableObject {
     func pausePreview() {
         player?.pause()
         isPlaying = false
+    }
+    
+    func openSpotifyPopup() {
+        selectedMedia = .spotify
+        showMediaPopup = true
+    }
+    
+    func openYouTubePopup() {
+        selectedMedia = .youtube
+        showMediaPopup = true
+    }
+    
+    func closePopup() {
+        showMediaPopup = false
+        selectedMedia = nil
     }
 }

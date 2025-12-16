@@ -241,7 +241,7 @@ class ChatViewModel: ObservableObject {
     }
     
     func detectMood(for message: String) {
-        MoodDetector.shared.detectMoodDirect(for: message) { [weak self] result in
+        MoodDetector.shared.detectMood(for: message) { [weak self] result in
             DispatchQueue.main.async {
                 self?.userMood = result
             }

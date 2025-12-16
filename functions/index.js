@@ -25,36 +25,75 @@ const cloudinary = require("cloudinary").v2;
  */
 exports.detectMood = functions.https.onCall(async (data, context) => {
   try {
-    // Runtime-safe config load
-    const apiKey = functions.config().gemini.key;
+    // Validate input
+    const message = (data.message || "").trim();
 
-    if (!apiKey) {
-      throw new functions.https.HttpsError(
-        "failed-precondition",
-        "Gemini API key not found in Firebase config"
-      );
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
-
-    const { message } = data;
     if (!message) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Message is required"
+        "Message text is required."
       );
     }
 
-    const prompt = `Detect the mood of this message: "${message}". Reply with only one emoji.`;
+    // Load API key safely
+    const apiKey = functions.config().gemini.key;
+    if (!apiKey) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "Gemini API key is not set in Firebase config."
+      );
+    }
 
+    // Instantiate Gemini with API Key
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      safetySettings: [
+        { category: "HARM_CATEGORY_DEROGATORY", threshold: "BLOCK" },
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK" },
+        { category: "HARM_CATEGORY_VIOLENCE", threshold: "BLOCK" },
+        { category: "HARM_CATEGORY_SELF_HARM", threshold: "BLOCK" },
+        { category: "HARM_CATEGORY_SEXUAL", threshold: "BLOCK" },
+      ],
+    });
+
+    // Safe & compliant prompt
+    const prompt = `
+      You are a harmless mood signal generator.
+
+      DO NOT infer mental health, psychological state, or personal attributes.
+      DO NOT analyze personality.
+      DO NOT give any advice.
+
+      Only provide a **general chat reaction emoji** to the message below.
+      For example: 😊 😂 😔 😡 😴 😍 😐 🤔
+
+      Message: "${message}"
+
+      Reply with **exactly one emoji** and nothing else.
+    `;
+
+    // Call the model
     const result = await model.generateContent(prompt);
-    return { mood: result.response.text() };
-  } catch (error) {
-    console.error("❌ Gemini error:", error);
-    throw new functions.https.HttpsError("internal", error.message);
+
+    const text = result?.response?.text()?.trim() || "";
+
+    // Extract ONLY the emoji
+    const emoji = [...text]
+      .filter((char) => /\p{Emoji}/u.test(char))
+      .join("");
+
+    const cleanedEmoji = emoji !== "" ? emoji : text.charAt(0);
+
+    return { mood: cleanedEmoji };
+  } catch (err) {
+    console.error("❌ detectMood ERROR:", err);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Mood detection failed: " + err.message
+    );
   }
 });
 
