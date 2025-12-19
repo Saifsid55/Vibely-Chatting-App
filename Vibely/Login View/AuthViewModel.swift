@@ -24,6 +24,26 @@ class AuthViewModel: ObservableObject {
     @Published var confirmPassword = ""
     @Published var isLoading = true
     @Published var verificationID: String?
+    @Published var profileImageURL: String? = nil
+    
+    private let defaultUserSchema: [String: Any] = [
+        "age": "",
+        "bio": "",
+        "collectionPhotos": [],
+        "coverPhotoURL": "",
+        "displayName": "",
+        "fcmToken": "",
+        "gender": "",
+        "location": "",
+        "phoneNumber": "",
+        "coverPhotoHash": "",
+        "profilePhotoHash": "",
+        "photoURL": "",
+        "profession": "",
+        "updatedAt": FieldValue.serverTimestamp(),
+        "username_lowercase": ""
+    ]
+    
     private let db = Firestore.firestore()
     
     var isPasswordMatching: Bool {
@@ -38,6 +58,7 @@ class AuthViewModel: ObservableObject {
         if let user = Auth.auth().currentUser {
             Task {
                 try await loadUser(uid: user.uid)
+                self.syncUserSchema(for: user.uid)
             }
         } else {
             // 👇 Add this to end splash for non-logged-in users
@@ -176,6 +197,41 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    func syncUserSchema(for userID: String) {
+        let userRef = db.collection("users").document(userID)
+        
+        // Capture schema in a local constant so it’s safe inside the escaping closure
+        let schema = defaultUserSchema
+        
+        userRef.getDocument { document, error in
+            guard let document = document, document.exists else {
+                print("⚠️ User document not found.")
+                return
+            }
+            
+            var updates: [String: Any] = [:]
+            
+            for (key, defaultValue) in schema {
+                if document.get(key) == nil {
+                    updates[key] = defaultValue
+                }
+            }
+            
+            if !updates.isEmpty {
+                userRef.updateData(updates) { error in
+                    if let error = error {
+                        print("❌ Failed to update missing fields:", error.localizedDescription)
+                    } else {
+                        print("✅ Synced missing fields for user:", userID)
+                    }
+                }
+            } else {
+                print("✅ All fields already exist for user:", userID)
+            }
+        }
+    }
+    
+    
     func signOut() {
         do {
             try Auth.auth().signOut()
@@ -238,4 +294,5 @@ class AuthViewModel: ObservableObject {
 
 extension Notification.Name {
     static let didLogout = Notification.Name("didLogout")
+    static let profileTabDidDisappear = Notification.Name("profileTabDidDisappear")
 }

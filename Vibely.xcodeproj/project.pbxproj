@@ -10,6 +10,7 @@
 		5B33D3F92EBA334100C711B2 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 5B33D3F82EBA334100C711B2 /* FirebaseFunctions */; };
 		5B48DCD22EBCC984002A5566 /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 5B48DCD12EBCC984002A5566 /* Secrets.xcconfig */; };
 		5B48DCD42EBCCBC3002A5566 /* Secrets.template.xcconfig  in Resources */ = {isa = PBXBuildFile; fileRef = 5B48DCD32EBCCBC3002A5566 /* Secrets.template.xcconfig  */; };
+		5B48DCF72EC6482B002A5566 /* Cloudinary in Frameworks */ = {isa = PBXBuildFile; productRef = 5B48DCF62EC6482B002A5566 /* Cloudinary */; };
 		5B5607202E954CCD00D41A72 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B56071F2E954CCD00D41A72 /* FirebaseAI */; };
 		5B5607222E954CCD00D41A72 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5B5607212E954CCD00D41A72 /* FirebaseAnalytics */; };
 		5B5607242E954CCD00D41A72 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5B5607232E954CCD00D41A72 /* FirebaseAnalyticsCore */; };
@@ -19,6 +20,8 @@
 		5B56072C2E954CCD00D41A72 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 5B56072B2E954CCD00D41A72 /* FirebaseFirestore */; };
 		5B56072E2E954CCD00D41A72 /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = 5B56072D2E954CCD00D41A72 /* FirebaseInAppMessaging-Beta */; };
 		5B5607302E954CCD00D41A72 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 5B56072F2E954CCD00D41A72 /* FirebaseStorage */; };
+		5B6B18072ED8990D00764902 /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 5B6B18062ED8990D00764902 /* InjectionNext */; };
+		5B6B180A2ED89B8100764902 /* HotSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B6B18092ED89B8100764902 /* HotSwiftUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,10 +62,13 @@
 				5B5607282E954CCD00D41A72 /* FirebaseAuth in Frameworks */,
 				5B56072E2E954CCD00D41A72 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				5B5607222E954CCD00D41A72 /* FirebaseAnalytics in Frameworks */,
+				5B48DCF72EC6482B002A5566 /* Cloudinary in Frameworks */,
 				5B5607242E954CCD00D41A72 /* FirebaseAnalyticsCore in Frameworks */,
 				5B33D3F92EBA334100C711B2 /* FirebaseFunctions in Frameworks */,
 				5B5607202E954CCD00D41A72 /* FirebaseAI in Frameworks */,
 				5B56072C2E954CCD00D41A72 /* FirebaseFirestore in Frameworks */,
+				5B6B180A2ED89B8100764902 /* HotSwiftUI in Frameworks */,
+				5B6B18072ED8990D00764902 /* InjectionNext in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -117,6 +123,9 @@
 				5B56072D2E954CCD00D41A72 /* FirebaseInAppMessaging-Beta */,
 				5B56072F2E954CCD00D41A72 /* FirebaseStorage */,
 				5B33D3F82EBA334100C711B2 /* FirebaseFunctions */,
+				5B48DCF62EC6482B002A5566 /* Cloudinary */,
+				5B6B18062ED8990D00764902 /* InjectionNext */,
+				5B6B18092ED89B8100764902 /* HotSwiftUI */,
 			);
 			productName = Vibely;
 			productReference = 5B9795D12E6C60C400976A45 /* Vibely.app */;
@@ -148,6 +157,9 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				5B48DCF52EC6482B002A5566 /* XCRemoteSwiftPackageReference "cloudinary_ios" */,
+				5B6B18052ED8990D00764902 /* XCRemoteSwiftPackageReference "InjectionNext" */,
+				5B6B18082ED89B8100764902 /* XCRemoteSwiftPackageReference "HotSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5B9795D22E6C60C400976A45 /* Products */;
@@ -236,7 +248,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -295,7 +307,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -320,13 +332,16 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-Xlinker\n-interposable",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.saifdev.app.Vibely;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -350,8 +365,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -389,12 +404,36 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		5B48DCF52EC6482B002A5566 /* XCRemoteSwiftPackageReference "cloudinary_ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/cloudinary/cloudinary_ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.2.3;
+			};
+		};
 		5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 12.3.0;
+			};
+		};
+		5B6B18052ED8990D00764902 /* XCRemoteSwiftPackageReference "InjectionNext" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/johnno1962/InjectionNext.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
+		5B6B18082ED89B8100764902 /* XCRemoteSwiftPackageReference "HotSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/johnno1962/HotSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.4;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -404,6 +443,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
+		};
+		5B48DCF62EC6482B002A5566 /* Cloudinary */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B48DCF52EC6482B002A5566 /* XCRemoteSwiftPackageReference "cloudinary_ios" */;
+			productName = Cloudinary;
 		};
 		5B56071F2E954CCD00D41A72 /* FirebaseAI */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -449,6 +493,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5B56071E2E954CCD00D41A72 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		5B6B18062ED8990D00764902 /* InjectionNext */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B6B18052ED8990D00764902 /* XCRemoteSwiftPackageReference "InjectionNext" */;
+			productName = InjectionNext;
+		};
+		5B6B18092ED89B8100764902 /* HotSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B6B18082ED89B8100764902 /* XCRemoteSwiftPackageReference "HotSwiftUI" */;
+			productName = HotSwiftUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

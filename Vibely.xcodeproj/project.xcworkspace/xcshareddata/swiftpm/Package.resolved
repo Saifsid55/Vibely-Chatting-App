@@ -1,5 +1,5 @@
 {
-  "originHash" : "c63c63846d9c539229e96de38d6af51417e28c0ee9a0bc48bd0f0f19d923c329",
+  "originHash" : "a2279b48376bfa6182fa5b834fbaf1b243b8a5f7c605277b50c3d9c6f26c0062",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "61b85103a1aeed8218f17c794687781505fbbef5",
         "version" : "11.2.0"
+      }
+    },
+    {
+      "identity" : "cloudinary_ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/cloudinary/cloudinary_ios.git",
+      "state" : {
+        "revision" : "11f859b417364210e4e8fd9462109febf49c5bc5",
+        "version" : "5.2.3"
       }
     },
     {
@@ -80,6 +89,24 @@
       "state" : {
         "revision" : "fb7f2740b1570d2f7599c6bb9531bf4fad6974b7",
         "version" : "5.0.0"
+      }
+    },
+    {
+      "identity" : "hotswiftui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/johnno1962/HotSwiftUI.git",
+      "state" : {
+        "revision" : "9e701abd2da67c7cfac5b70ae6f225fa92a1c7bc",
+        "version" : "1.2.4"
+      }
+    },
+    {
+      "identity" : "injectionnext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/johnno1962/InjectionNext.git",
+      "state" : {
+        "revision" : "4688c589e5e3501010f8a3da8327e6dc8425c072",
+        "version" : "1.5.0"
       }
     },
     {

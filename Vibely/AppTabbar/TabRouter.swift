@@ -11,4 +11,6 @@ import SwiftUI
 final class TabRouter: ObservableObject {
     @Published var selectedTab: TabBarItem = .home
     @Published var isTabBarVisible: Bool = true
+    @Published var isTabBarCollapsed: Bool = false
+    @Published var allowCollapse: Bool = true
 }
