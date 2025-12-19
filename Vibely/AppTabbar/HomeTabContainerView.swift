@@ -16,7 +16,7 @@ enum TabBarItem: String, CaseIterable {
     var title: String {
         switch self {
         case .home: return "Home"
-        case .chat: return "Chats"
+        case .chat: return "Find"
         case .profile: return "Profile"
             //        case .profileTwo: return "ProfileTwo"
         }
@@ -39,7 +39,7 @@ struct MainTabView: View {
                     case .home:
                         HomeView()
                     case .chat:
-                        EmptyView()
+                        FindUsersView()
                     case .profile:
                         NewProfileView()
                             .id(tabRouter.selectedTab)
