@@ -30,7 +30,9 @@ struct NewProfileView: View {
     @State private var showFullCoverImage: Bool = false
     @State private var showFullProfileImage: Bool = false
     @State private var showEditProfileDetails = false
-    
+    @State private var selectedPickerItem: PhotosPickerItem?
+    @State private var showPhotoPicker = false
+
     @State private var disableDragAnimation = false
     @State private var currentOffset: CGFloat = UIScreen.main.bounds.height
     @GestureState private var dragTranslation: CGFloat = 0
@@ -101,7 +103,9 @@ struct NewProfileView: View {
         .modifier(EditDialogModifier(
             showEditDialog: $showEditDialog,
             cropType: $cropType,
-            profileVM: profileVM,
+            onChangePicture: {
+                showEditDialog = false
+            },
             showFullCoverImage: $showFullCoverImage,
             showFullProfileImage: $showFullProfileImage
         ))
@@ -110,11 +114,23 @@ struct NewProfileView: View {
             showFullProfileImage: $showFullProfileImage,
             profileVM: profileVM
         ))
-        .modifier(PhotoPickersModifier(profileVM: profileVM))
+        .modifier(PhotoPickersModifier(
+            isPresented: $showPhotoPicker, selectedItem: $selectedPickerItem
+        ))
         .modifier(CropHandlers(
-            profileVM: profileVM,
             cropType: $cropType,
-            cropItem: $cropItem
+            cropItem: $cropItem,
+            onUpload: { data, type in
+                Task {
+                    let imageType: ProfileImageType =
+                        (type == .cover) ? .cover : .profile
+
+                    await profileVM.uploadImage(
+                        data: data,
+                        type: imageType
+                    )
+                }
+            }
         ))
         
         .fullScreenCover(isPresented: $showEditProfileDetails) {
@@ -220,46 +236,46 @@ struct NewProfileView: View {
         
         
         .simultaneousGesture(
-               DragGesture(minimumDistance: 0)
-                   .updating($dragTranslation) { value, state, _ in
-                       let translation = value.translation.height
-                       let isAtTop = scrollOffset >= -1 // Small threshold for floating point
-                       let isDraggingUp = translation < 0
-                       let isDraggingDown = translation > 0
-                       
-                       // CHANGED: Allow sheet drag in two cases:
-                       // Case 1: User is at the top of scroll AND dragging upward (collapse sheet)
-                       // Case 2: User is dragging downward (expand sheet) - works anywhere
-                       let shouldDrag = (isAtTop && isDraggingUp) || isDraggingDown
-                       
-                       if shouldDrag {
-                           let newOffset = currentOffset + translation
-                           var adjusted = translation
-                           
-                           // Apply resistance at limits
-                           if newOffset < topLimit || newOffset > bottomLimit {
-                               adjusted *= 0.4
-                           }
-                           
-                           state = adjusted
-                       }
-                   }
-                   .onEnded { value in
-                       let translation = value.translation.height
-                       let isAtTop = scrollOffset >= -1
-                       let isDraggingUp = translation < 0
-                       let isDraggingDown = translation > 0
-                       
-                       // CHANGED: Snap sheet position for both directions
-                       let shouldSnap = (isAtTop && isDraggingUp) || isDraggingDown
-                       
-                       if shouldSnap {
-                           let newOffset = currentOffset + translation
-                           let mid = (bottomLimit + topLimit) / 2
-                           currentOffset = newOffset < mid ? topLimit : bottomLimit
-                       }
-                   }
-           )
+            DragGesture(minimumDistance: 0)
+                .updating($dragTranslation) { value, state, _ in
+                    let translation = value.translation.height
+                    let isAtTop = scrollOffset >= -1 // Small threshold for floating point
+                    let isDraggingUp = translation < 0
+                    let isDraggingDown = translation > 0
+                    
+                    // CHANGED: Allow sheet drag in two cases:
+                    // Case 1: User is at the top of scroll AND dragging upward (collapse sheet)
+                    // Case 2: User is dragging downward (expand sheet) - works anywhere
+                    let shouldDrag = (isAtTop && isDraggingUp) || isDraggingDown
+                    
+                    if shouldDrag {
+                        let newOffset = currentOffset + translation
+                        var adjusted = translation
+                        
+                        // Apply resistance at limits
+                        if newOffset < topLimit || newOffset > bottomLimit {
+                            adjusted *= 0.4
+                        }
+                        
+                        state = adjusted
+                    }
+                }
+                .onEnded { value in
+                    let translation = value.translation.height
+                    let isAtTop = scrollOffset >= -1
+                    let isDraggingUp = translation < 0
+                    let isDraggingDown = translation > 0
+                    
+                    // CHANGED: Snap sheet position for both directions
+                    let shouldSnap = (isAtTop && isDraggingUp) || isDraggingDown
+                    
+                    if shouldSnap {
+                        let newOffset = currentOffset + translation
+                        let mid = (bottomLimit + topLimit) / 2
+                        currentOffset = newOffset < mid ? topLimit : bottomLimit
+                    }
+                }
+        )
         
     }
     
@@ -290,7 +306,7 @@ struct NewProfileView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 8) {
                 
-                Text(profileVM.profile?.username_lowercase ?? "")
+                Text(profileVM.profile?.usernameLowercase ?? "")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.white)
@@ -413,7 +429,8 @@ struct NewProfileView: View {
             content
                 .onAppear {
                     Task {
-                        await profileVM.loadCurrentUserProfile()
+                        guard let uid = Auth.auth().currentUser?.uid else { return }
+                        await profileVM.loadProfile(userId: uid)
                     }
                     
                     // Move sheet from 100% (hidden) → 90% (show 10%)
