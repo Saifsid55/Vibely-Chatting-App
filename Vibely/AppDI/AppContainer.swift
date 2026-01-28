@@ -4,6 +4,7 @@
 //
 //  Created by Muhammad Saif on 22/01/26.
 //
+// MARK: - Compositional Root
 
 import Foundation
 import FirebaseFirestore
