@@ -61,11 +61,6 @@ functions/npm-debug.log
 functions/yarn-debug.log
 functions/yarn-error.log
 
-##########################
-# Firebase Project Secrets
-##########################
-GoogleService-Info.plist
-.env
 
 ##########################
 # Fastlane (optional automation)

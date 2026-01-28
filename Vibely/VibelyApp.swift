@@ -21,9 +21,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
     
     func application(_ application: UIApplication,
-                      supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
-         return .portrait
-     }
+                     supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return .portrait
+    }
     
     //    // Forward notifications to Firebase Auth
     //    func application(_ application: UIApplication,
@@ -63,15 +63,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("✅ Gemini API key already exists in Keychain.")
             return
         }
-
+        
         // Try environment variable (for CI/CD)
         var apiKey: String? = ProcessInfo.processInfo.environment["GEMINI_API_KEY"]
-
+        
         // Fallback: read from Info.plist (xcconfig provides this)
         if apiKey == nil || apiKey!.isEmpty {
             apiKey = Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String
         }
-
+        
         if let apiKey, !apiKey.isEmpty {
             KeychainHelper.shared.save(apiKey, forKey: KeychainKeys.geminiAPIKey)
             print("🔑 Gemini API key stored securely in Keychain.")
@@ -79,7 +79,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("⚠️ GEMINI_API_KEY not found. Key not stored.")
         }
     }
-
+    
 }
 
 
@@ -87,14 +87,21 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct VibelyApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var homeVM = HomeViewModel()      // ✅ Shared instance
     @StateObject private var router = Router()             // ✅ Handles navigation stack
     @StateObject private var tabRouter = TabRouter()
-    @StateObject private var profileVM = ProfileViewModel()
+    @StateObject private var profileVM: ProfileViewModel
     @StateObject private var mediaBarViewModel = MediaBarViewModel()
-
     
+    init() {
+        let container = AppContainer()
+        
+        _profileVM = StateObject(
+            wrappedValue: container.makeProfileViewModel()
+        )
+    }
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -142,6 +149,14 @@ struct RootView: View {
     }
 }
 
+
+
+
+
+
+
+
+
 #if canImport(HotSwiftUI)
 @_exported import HotSwiftUI
 #elseif canImport(Inject)
@@ -161,8 +176,8 @@ public class InjectionObserver: ObservableObject {
     let publisher = PassthroughSubject<Void, Never>()
     init() {
         cancellable = NotificationCenter.default.publisher(for:
-            Notification.Name("INJECTION_BUNDLE_NOTIFICATION"))
-            .sink { [weak self] change in
+                                                            Notification.Name("INJECTION_BUNDLE_NOTIFICATION"))
+        .sink { [weak self] change in
             self?.injectionNumber += 1
             self?.publisher.send()
         }

@@ -43,7 +43,7 @@ final class EditProfileDetailsViewModel: ObservableObject {
         // NON editable:
         self.phoneNumber = p?.phoneNumber ?? ""
         self.email = p?.email ?? ""
-        self.usernameLowercase = p?.username_lowercase ?? ""
+        self.usernameLowercase = p?.usernameLowercase ?? ""
     }
     
     func loadFromProfile() {
@@ -60,7 +60,7 @@ final class EditProfileDetailsViewModel: ObservableObject {
         // Non-editable
         phoneNumber = p.phoneNumber ?? ""
         email = p.email ?? ""
-        usernameLowercase = p.username_lowercase
+        usernameLowercase = p.usernameLowercase
     }
     
     func saveChanges() async throws {
