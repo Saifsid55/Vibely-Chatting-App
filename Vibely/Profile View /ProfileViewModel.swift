@@ -6,10 +6,10 @@
 //
 
 import Foundation
-import FirebaseAuth
-import FirebaseFirestore
-import PhotosUI
-import _PhotosUI_SwiftUI
+//import FirebaseAuth
+//import FirebaseFirestore
+//import PhotosUI
+//import _PhotosUI_SwiftUI
 import UIKit
 
 @MainActor
