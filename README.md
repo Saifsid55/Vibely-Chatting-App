@@ -137,29 +137,31 @@ Then redeploy functions.
 
 The iOS client currently contains default Cloudinary upload values in `CloudinaryService.swift` (cloud name, upload preset, folder). You should replace these with your own account values for production.
 
-## Helpful Commands
-
-From project root:
-
-```bash
-# List files quickly
-rg --files
-
-# Functions
-cd functions && npm install
-cd functions && npm run serve
-cd functions && npm run deploy
-```
 
 ## Roadmap Ideas
+
 
 - Add unit/UI tests for view models and repositories.
 - Move all secret/config values to environment-specific config.
 - Add CI pipeline for lint/build/function deploy checks.
 - Add richer moderation and abuse prevention around chat + AI signals.
+![Uploading Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01.53.25.png…]()
 
 ---
 
-If you want, I can also generate:
-- a **contributor-focused README** (development workflow, branch strategy, commit style), or
-- a **user-facing README** (screenshots, feature walkthrough, store-ready copy).
+
+
+
+
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 19 42" src="https://github.com/user-attachments/assets/24da6939-4e48-459a-b70f-ace68dac4428" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 19 12" src="https://github.com/user-attachments/assets/d498d4b1-cb0b-4a40-b2e2-0c2f2d26aae3" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 19 03" src="https://github.com/user-attachments/assets/0adc101e-2e2c-411a-a0d1-8508ceb84916" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 53 31" src="https://github.com/user-attachments/assets/e3bf6c01-679d-40b4-a6af-aab2a724b46e" />
+<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 53 25" src="https://github.com/user-attachments/assets/3830007d-0c4a-404c-8a9d-bbd73e4e7dbb" />
+
+
+
+
+
+
+
