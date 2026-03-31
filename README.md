@@ -12,6 +12,25 @@ Vibely is an iOS chat and social-discovery app built with **SwiftUI**, **Firebas
 - Cloudinary-backed media upload and Firebase Callable Function image delete.
 - Gemini-powered callable function for lightweight mood emoji detection.
 
+## 📱 App Screens
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/3830007d-0c4a-404c-8a9d-bbd73e4e7dbb" width="200"/>
+  <img src="https://github.com/user-attachments/assets/e3bf6c01-679d-40b4-a6af-aab2a724b46e" width="200"/>
+  <img src="https://github.com/user-attachments/assets/0adc101e-2e2c-411a-a0d1-8508ceb84916" width="200"/>
+  <img src="https://github.com/user-attachments/assets/d498d4b1-cb0b-4a40-b2e2-0c2f2d26aae3" width="200"/>
+  <img src="https://github.com/user-attachments/assets/24da6939-4e48-459a-b70f-ace68dac4428" width="200"/>
+</p>
+
+<p align="center">
+  Login &nbsp;&nbsp;&nbsp;
+  Sign Up &nbsp;&nbsp;&nbsp;
+  Home &nbsp;&nbsp;&nbsp;
+  Profile &nbsp;&nbsp;&nbsp;
+  Details
+</p>
+
+
 ## Tech Stack
 
 ### iOS App
@@ -148,20 +167,3 @@ The iOS client currently contains default Cloudinary upload values in `Cloudinar
 ![Uploading Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01.53.25.png…]()
 
 ---
-
-
-
-
-
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 19 42" src="https://github.com/user-attachments/assets/24da6939-4e48-459a-b70f-ace68dac4428" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 19 12" src="https://github.com/user-attachments/assets/d498d4b1-cb0b-4a40-b2e2-0c2f2d26aae3" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 19 03" src="https://github.com/user-attachments/assets/0adc101e-2e2c-411a-a0d1-8508ceb84916" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 53 31" src="https://github.com/user-attachments/assets/e3bf6c01-679d-40b4-a6af-aab2a724b46e" />
-<img width="1206" height="2622" alt="Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01 53 25" src="https://github.com/user-attachments/assets/3830007d-0c4a-404c-8a9d-bbd73e4e7dbb" />
-
-
-
-
-
-
-
