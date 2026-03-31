@@ -17,9 +17,9 @@ Vibely is an iOS chat and social-discovery app built with **SwiftUI**, **Firebas
 <p align="center">
   <img src="https://github.com/user-attachments/assets/3830007d-0c4a-404c-8a9d-bbd73e4e7dbb" width="200"/>
   <img src="https://github.com/user-attachments/assets/e3bf6c01-679d-40b4-a6af-aab2a724b46e" width="200"/>
-  <img src="https://github.com/user-attachments/assets/0adc101e-2e2c-411a-a0d1-8508ceb84916" width="200"/>
-  <img src="https://github.com/user-attachments/assets/d498d4b1-cb0b-4a40-b2e2-0c2f2d26aae3" width="200"/>
   <img src="https://github.com/user-attachments/assets/24da6939-4e48-459a-b70f-ace68dac4428" width="200"/>
+  <img src="https://github.com/user-attachments/assets/d498d4b1-cb0b-4a40-b2e2-0c2f2d26aae3" width="200"/>
+  <img src="https://github.com/user-attachments/assets/0adc101e-2e2c-411a-a0d1-8508ceb84916" width="200"/>
 </p>
 
 <p align="center">
