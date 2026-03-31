@@ -88,25 +88,24 @@ struct VibelyApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
-    @StateObject private var authVM = AuthViewModel()
-    @StateObject private var homeVM = HomeViewModel()      // ✅ Shared instance
-    @StateObject private var router = Router()             // ✅ Handles navigation stack
+    @StateObject private var authVM: AuthViewModel
+    @StateObject private var homeVM: HomeViewModel
+    @StateObject private var router = Router()
     @StateObject private var tabRouter = TabRouter()
     @StateObject private var profileVM: ProfileViewModel
     @StateObject private var mediaBarViewModel = MediaBarViewModel()
-    
+
     init() {
         let container = AppContainer()
-        
-        _profileVM = StateObject(
-            wrappedValue: container.makeProfileViewModel()
-        )
+        _authVM = StateObject(wrappedValue: container.makeAuthViewModel())
+        _homeVM = StateObject(wrappedValue: container.makeHomeViewModel())
+        _profileVM = StateObject(wrappedValue: container.makeProfileViewModel())
     }
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(authVM)
-                .environmentObject(homeVM)     // ✅ Shared to HomeView, ChatDetailView etc.
+                .environmentObject(homeVM)
                 .environmentObject(router)
                 .environmentObject(tabRouter)
                 .environmentObject(profileVM)

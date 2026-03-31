@@ -1,245 +1,155 @@
-//
-//  ChatDetailViewModel.swift
-//  Vibely
-//
-//  Created by Mohd Saif on 17/09/25.
-//
-
 import SwiftUI
-import Combine
 import FirebaseAuth
 import FirebaseFirestore
-import FirebaseFunctions
 
 @MainActor
-class ChatViewModel: ObservableObject {
+final class ChatViewModel: ChatViewModelProtocol {
     @Published var messages: [Message] = []
-    @Published var newMessage: String = ""
+    @Published var newMessage = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var animatedMessageIDs: Set<String> = []
-    @Published var userMood: String? = nil
-    private var lastKnownStatuses: [String: MessageStatus] = [:]
-    
+    @Published var userMood: String?
+
     private let allUsers: [String: AppUserModel]
-    var chat: Chat
-    private let db = Firestore.firestore()          // ✅ Added Firestore reference
-    private var listener: ListenerRegistration?     // ✅ To keep real-time updates
+    private let chatRepository: ChatRepository
+    private let chatUseCases: ChatUseCases
+    private var listener: ListenerRegistration?
     private let currentUid: String
-    
-    init(chat: Chat, allUsers: [String: AppUserModel]) {
+    var chat: Chat
+
+    init(
+        chat: Chat,
+        allUsers: [String: AppUserModel],
+        chatRepository: ChatRepository = FirebaseChatRepository(db: Firestore.firestore())
+    ) {
         self.chat = chat
         self.allUsers = allUsers
+        self.chatRepository = chatRepository
+        self.chatUseCases = ChatUseCases(chatRepository: chatRepository)
         self.currentUid = Auth.auth().currentUser?.uid ?? ""
-        
-        // Only start listener if chat exists in Firestore
+
         if let chatId = chat.id {
             startListening(chatId: chatId)
-        } else {
-            messages = [] // temporary chat, no Firestore yet
         }
     }
-    
+
     deinit {
         listener?.remove()
     }
-    
-    // MARK: - Chat Info for View
+
     var chatName: String {
-        // Use helper logic instead of chat.name
         let otherUid = chat.participants.first { $0 != currentUid } ?? chat.participants.first ?? ""
         return allUsers[otherUid]?.username ?? "Unknown"
     }
-    
+
     var chatInitial: String {
         String(chatName.prefix(1))
     }
-    
+
     var chatAvatarURL: String? {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
         let otherUid = chat.participants.first { $0 != currentUid } ?? chat.participants.first ?? ""
         return chat.avatarURL?[otherUid] ?? allUsers[otherUid]?.avatarURL
     }
-    
-    // MARK: - Real-time listener (was loadMessages)
+
     private func startListening(chatId: String) {
         isLoading = true
-        
-        listener = db.collection("chats")
-            .document(chatId)
-            .collection("messages")
-            .order(by: "timestamp", descending: false)
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                if let error = error {
-                    self.errorMessage = error.localizedDescription
-                    return
-                }
-                
-                guard let snapshot = snapshot else { return }
-                
-                var fetchedMessages: [Message] = []
-                var newAnimatedIDs: Set<String> = []
-                
-                for change in snapshot.documentChanges {
-                    if let message = try? change.document.data(as: Message.self) {
-                        
-                        fetchedMessages.append(message)
-                        
-                        // ✅ Only animate if this is a modified message
-                        if change.type == .modified, let id = message.id {
-                            newAnimatedIDs.insert(id)
-                        }
-                        // Optional: auto mark delivered/seen
-                        if !message.isMe && message.status == .delivered {
-                            self.markMessagesAsSeen()
-                        } else if !message.isMe && message.status == .sent {
-                            self.markMessageAsDelivered(message)
-                        }
-                    }
-                }
-                
-                // Merge with existing messages to keep full list
-                let existingMessages = self.messages.filter { msg in
-                    !fetchedMessages.contains(where: { $0.id == msg.id })
-                }
-                self.messages = (existingMessages + fetchedMessages).sorted {
-                    ($0.timestamp) < ($1.timestamp)
-                }
-                
-                // ✅ Only animate messages that changed status
-                self.animatedMessageIDs.formUnion(newAnimatedIDs)
-                
-                // ✅ Detect mood only for the latest received message (not mine)
-                if let lastReceivedMessage = self.messages.last(where: { !$0.isMe }) {
-                    self.detectMood(for: lastReceivedMessage.text ?? "")
-                }
-                print("Animated IDs this update:", newAnimatedIDs)
-            }
+        listener = chatRepository.listenToMessages(chatId: chatId) { [weak self] snapshot in
+            self?.handleMessagesSnapshot(snapshot)
+        } onError: { [weak self] error in
+            self?.errorMessage = error.localizedDescription
+            self?.isLoading = false
+        }
     }
-    
-    
-    
-    
-    // MARK: - Send message
+
+    private func handleMessagesSnapshot(_ snapshot: QuerySnapshot) {
+        isLoading = false
+
+        var fetchedMessages: [Message] = []
+        var newAnimatedIDs: Set<String> = []
+
+        for change in snapshot.documentChanges {
+            guard let message = try? change.document.data(as: Message.self) else { continue }
+            fetchedMessages.append(message)
+
+            if change.type == .modified, let id = message.id {
+                newAnimatedIDs.insert(id)
+            }
+            if !message.isMe && message.status == .delivered {
+                markMessagesAsSeen()
+            } else if !message.isMe && message.status == .sent {
+                markMessageAsDelivered(message)
+            }
+        }
+
+        let existingMessages = messages.filter { msg in
+            !fetchedMessages.contains(where: { $0.id == msg.id })
+        }
+        messages = (existingMessages + fetchedMessages).sorted { $0.timestamp < $1.timestamp }
+        animatedMessageIDs.formUnion(newAnimatedIDs)
+
+        if let lastReceivedMessage = messages.last(where: { !$0.isMe }) {
+            detectMood(for: lastReceivedMessage.text ?? "")
+        }
+    }
+
     func sendMessage() {
         guard !newMessage.isEmpty,
               let uid = Auth.auth().currentUser?.uid else { return }
-        
+
         let text = newMessage
         let now = Timestamp(date: Date())
-        
+
         Task {
-            if chat.id == nil {
-                // 1️⃣ Create new chat document in Firestore
-                let chatRef = db.collection("chats").document()
-                chat.id = chatRef.documentID
-                
-                let chatData: [String: Any] = [
-                    "participants": chat.participants,
-                    "avatarURL": chat.avatarURL ?? "",
-                    "lastMessage": [
-                        "senderId": uid,
-                        "text": text,
-                        "timestamp": now
-                    ],
-                    "updatedAt": now
-                ]
-                
-                do {
-                    try await chatRef.setData(chatData)
-                    print("✅ Created new chat in Firestore")
-                    
-                    // Start listening now that chat exists
-                    startListening(chatId: chat.id!)
-                } catch {
-                    print("❌ Failed to create chat: \(error)")
-                    return
-                }
-            }
-            
-            // 2️⃣ Add message to messages collection
-            guard let chatId = chat.id else { return }
-            let messageId = UUID().uuidString
-            let messageData: [String: Any] = [
-                "senderId": uid,
-                "text": text,
-                "timestamp": now,
-                "type": "text",
-                "status": MessageStatus.sent.rawValue
-                //                "mood": FieldValue.delete()
-            ]
-            
             do {
-                try await db.collection("chats")
-                    .document(chatId)
-                    .collection("messages")
-                    .document(messageId)
-                    .setData(messageData)
-                
-                // Update lastMessage
-                try await db.collection("chats")
-                    .document(chatId)
-                    .setData([
-                        "lastMessage": [
-                            "senderId": uid,
-                            "text": text,
-                            "timestamp": now
-                        ],
-                        "updatedAt": now
-                    ], merge: true)
-                
-                // Clear input
-                await MainActor.run {
-                    self.newMessage = ""
+                if chat.id == nil {
+                    let chatId = try await chatRepository.createChat(
+                        participants: chat.participants,
+                        avatarURL: chat.avatarURL ?? [:],
+                        senderId: uid,
+                        text: text,
+                        timestamp: now
+                    )
+                    chat.id = chatId
+                    startListening(chatId: chatId)
                 }
-                
+
+                guard let chatId = chat.id else { return }
+                try await chatUseCases.createMessage(
+                    chatId: chatId,
+                    messageId: UUID().uuidString,
+                    senderId: uid,
+                    text: text,
+                    timestamp: now
+                )
+                newMessage = ""
             } catch {
-                print("❌ Failed to send message: \(error)")
+                errorMessage = error.localizedDescription
             }
         }
     }
-    
+
     private func markMessageAsDelivered(_ message: Message) {
-        guard !message.isMe, let chatId = chat.id, let messageId = message.id else { return }
-        
-        let messageRef = db.collection("chats")
-            .document(chatId)
-            .collection("messages")
-            .document(messageId)
-        
-        messageRef.updateData(["status": MessageStatus.delivered.rawValue])
+        guard !message.isMe,
+              let chatId = chat.id,
+              let messageId = message.id else { return }
+
+        Task {
+            await chatRepository.updateMessageStatus(chatId: chatId, messageId: messageId, status: .delivered)
+        }
     }
-    
+
     func markMessagesAsSeen() {
         guard let chatId = chat.id else { return }
-        
+
         for message in messages where !message.isMe && message.status != .seen {
-            db.collection("chats")
-                .document(chatId)
-                .collection("messages")
-                .document(message.id!)
-                .updateData(["status": MessageStatus.seen.rawValue])
+            guard let messageId = message.id else { continue }
+            Task {
+                await chatRepository.updateMessageStatus(chatId: chatId, messageId: messageId, status: .seen)
+            }
         }
     }
-    
-    
-    private func loadSavedStatuses(for chatId: String) -> [String: MessageStatus] {
-        guard let data = UserDefaults.standard.data(forKey: "statuses_\(chatId)") else { return [:] }
-        if let decoded = try? JSONDecoder().decode([String: MessageStatus].self, from: data) {
-            return decoded
-        }
-        return [:]
-    }
-    
-    private func saveStatuses(_ statuses: [String: MessageStatus], for chatId: String) {
-        if let data = try? JSONEncoder().encode(statuses) {
-            UserDefaults.standard.set(data, forKey: "statuses_\(chatId)")
-        }
-    }
-    
+
     func detectMood(for message: String) {
         MoodDetector.shared.detectMood(for: message) { [weak self] result in
             DispatchQueue.main.async {
