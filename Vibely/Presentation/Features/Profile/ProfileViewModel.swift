@@ -13,7 +13,7 @@ import Foundation
 import UIKit
 
 @MainActor
-final class ProfileViewModel: ObservableObject {
+final class ProfileViewModel: ProfileViewModelProtocol {
     
     @Published private(set) var profile: UserProfile?
     @Published var isLoading = false

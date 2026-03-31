@@ -45,3 +45,14 @@ protocol ChatViewModelProtocol: ObservableObject {
     func sendMessage()
     func markMessagesAsSeen()
 }
+
+@MainActor
+protocol ProfileViewModelProtocol: ObservableObject {
+    var profile: UserProfile? { get }
+    var isLoading: Bool { get }
+    var errorMessage: String? { get }
+
+    func loadProfile(userId: String) async
+    func uploadImage(data: Data, type: ProfileImageType) async
+    func updateProfile(details: ProfileUpdateDetails) async
+}
