@@ -323,6 +323,19 @@ struct NewProfileView: View {
                 CarouselView(vm: cvm)
                     .frame(height: 150)
                     .padding(.top, 16)
+
+                Button(role: .destructive) {
+                    vm.signOut()
+                } label: {
+                    Text("Logout")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red.opacity(0.9))
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.top, 12)
+                .padding(.horizontal, 24)
             }
             .overlay {
                 TrackScrollOffset()
