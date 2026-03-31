@@ -164,6 +164,5 @@ The iOS client currently contains default Cloudinary upload values in `Cloudinar
 - Move all secret/config values to environment-specific config.
 - Add CI pipeline for lint/build/function deploy checks.
 - Add richer moderation and abuse prevention around chat + AI signals.
-![Uploading Simulator Screenshot - iPhone 17 Pro - 2026-04-01 at 01.53.25.png…]()
 
 ---
